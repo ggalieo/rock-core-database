@@ -9,7 +9,7 @@ TRUNCATE TABLE
   runs, well_geometry, wells, dictionary, users, audit, meta
 RESTART IDENTITY CASCADE;
 
--- dictionary (28)
+-- dictionary (46)
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('analysis_group', 'DEV_TEST', '开发试验', '', 7, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('analysis_group', 'FLUID', '油气水性质', '', 5, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('analysis_group', 'GEOCHEM', '地化', '', 2, NULL);
@@ -23,13 +23,27 @@ INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('contact', 'CONFORM', '整合', '', 1, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('contact', 'FAULT', '断层接触', '', 3, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('contact', 'UNCONFORM', '不整合', '', 2, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fill', 'BITUMEN', '沥青', '', 5, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fill', 'CALCITE', '方解石', '', 2, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fill', 'MUD', '泥质', '', 4, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fill', 'NONE', '无充填', '', 1, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fill', 'QUARTZ', '石英', '', 3, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fossil', 'NONE', '未见', '', 1, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fossil', 'RICH', '化石富集', '', 3, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fossil', 'TRACE', '少量生物碎屑', '', 2, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fracture_type', 'CLOSED', '闭合缝', '', 2, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fracture_type', 'FILLED', '充填缝', '', 3, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fracture_type', 'OPEN', '张开缝', '', 1, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('fracture_type', 'STYLOLITE', '压溶缝', '', 4, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('gas_show', 'GAS_LAYER', '气层', '', 4, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('gas_show', 'KICK', '气侵', '', 3, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('gas_show', 'LOG_ANOMALY', '气测异常', '', 2, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('gas_show', 'NONE', '无', '', 1, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('sample_type', 'FULL', '全直径', '', 4, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('sample_type', 'PLUG', '柱塞样', '', 1, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('sample_type', 'POWDER', '粉末', '', 3, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('sample_type', 'SIDEWALL', '井壁样', '', 5, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('sample_type', 'THIN', '薄片', '', 2, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('sedimentary_structure', 'CROSS', '交错层理', '', 3, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('sedimentary_structure', 'GRADED', '递变层理', '', 4, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('sedimentary_structure', 'MASSIVE', '块状层理', '', 1, NULL);
@@ -38,6 +52,10 @@ INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('structure', 'CLASTIC', '碎屑结构', '', 1, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('structure', 'CRYSTAL', '晶粒结构', '', 3, NULL);
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('structure', 'MUDDY', '泥质结构', '', 2, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('vug_type', 'DISSOLVED', '溶蚀孔', '', 3, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('vug_type', 'INTERGRANULAR', '粒间孔', '', 4, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('vug_type', 'PRIMARY', '原生孔', '', 1, NULL);
+INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('vug_type', 'SECONDARY', '次生孔', '', 2, NULL);
 
 -- wells (15)
 INSERT INTO wells ("id", "code", "name", "region", "tectonic", "year", "type", "lon", "lat", "kb", "ground", "final_depth", "inventory", "cuttings", "sidewall", "coverage", "scanned", "status", "operator", "updated_at") VALUES (1, 'BD16', '板东16', '克拉玛依', '克百断裂带', 2020, '评价井', 84.95, 45.6, 524.1, 520.35, 4200.0, 86.4, 350, 12, 92.0, 78.6, '已扫描', '张伟', '2026-11-15 00:00');

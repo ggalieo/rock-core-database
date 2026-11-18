@@ -8,6 +8,7 @@ const META = {
   home: ["总览", "CORE OPERATIONS"],
   map: ["井位导航", "WELL MAP"],
   wells: ["井档案", "WELL ARCHIVE"],
+  entry: ["数据录入", "DATA ENTRY"],
   search: ["影像检索", "IMAGE SEARCH"],
   inventory: ["库存管理", "INVENTORY"],
   stats: ["分析", "ANALYTICS"],
@@ -43,6 +44,7 @@ async function route() {
     if (clean === "/home" || clean === "/") { active = "home"; await pages.home(); }
     else if (clean === "/map") { active = "map"; await pages.mapPage(); }
     else if (clean === "/wells") { active = "wells"; await pages.wells(); }
+    else if (clean === "/entry") { active = "entry"; await pages.entry(); }
     else if (clean.startsWith("/well/")) { active = "well"; await pages.well(parseInt(clean.split("/")[2], 10)); }
     else if (clean.startsWith("/image/")) { active = "image"; await imageViewer(parseInt(clean.split("/")[2], 10)); }
     else if (clean === "/search") { active = "search"; await pages.search(); }

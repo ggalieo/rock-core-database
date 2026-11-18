@@ -14,6 +14,7 @@ from urllib.parse import urlparse, parse_qs, unquote
 
 from db_backend import connect as db_connect, is_postgres
 from s3store import serve_core_object
+from entry import EntryError, create as entry_create, meta as entry_meta, recent as entry_recent
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -342,7 +343,14 @@ class Handler(BaseHTTPRequestHandler):
                     return ok(self, api_inventory(conn, qs))
                 if path == "/api/admin":
                     return ok(self, api_admin(conn))
+                if path == "/api/entry/meta":
+                    return ok(self, entry_meta(conn))
+                if path == "/api/entry/recent":
+                    entity = qs.get("entity", [""])[0]
+                    return ok(self, entry_recent(conn, entity))
                 return fail(self, "not found", 404)
+            except EntryError as e:
+                return fail(self, e.message, e.status)
             except Exception as e:
                 sys.stderr.write("API error %s: %s\n" % (path, e))
                 return fail(self, str(e), 500)
@@ -367,7 +375,13 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/inventory/txn":
                 data = post_txn(conn, body)
                 return ok(self, data) if data else fail(self, "section not found", 404)
+            m = re.match(r"^/api/entry/([a-z_]+)$", path)
+            if m:
+                data = entry_create(conn, m.group(1), body)
+                return ok(self, data, 201)
             return fail(self, "not found", 404)
+        except EntryError as e:
+            return fail(self, e.message, e.status)
         except Exception as e:
             sys.stderr.write("POST error %s: %s\n" % (path, e))
             return fail(self, str(e), 500)
@@ -408,7 +422,7 @@ def main():
     parser = argparse.ArgumentParser(description="Core database demo server")
     parser.add_argument("--port", type=int, default=PORT)
     args = parser.parse_args()
-    if not DB_PATH.exists():
+    if not is_postgres() and not DB_PATH.exists():
         print("database not found, run: python app/seed.py")
         sys.exit(1)
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)

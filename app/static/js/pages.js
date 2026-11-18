@@ -770,6 +770,125 @@ export async function stats() {
   donutChart(document.getElementById("stInv"), d.inv.map((x) => [x.status, x.c]), { centerLabel: "段" });
 }
 
+// ============================================================ entry
+export async function entry() {
+  const el = root();
+  el.innerHTML = loading("正在加载录入表单");
+  const meta = await api("/api/entry/meta");
+  const entities = meta.entities || [];
+  if (!entities.length) { el.innerHTML = empty("没有可录入的数据对象"); return; }
+  const wanted = qsFromHash().params.get("entity");
+  let current = entities.some((x) => x.key === wanted) ? wanted : entities[0].key;
+
+  const optList = (f) => {
+    const o = f.options;
+    if (Array.isArray(o)) return o.map((v) => ({ value: v, label: v }));
+    if (!o || !o.kind) return [];
+    if (o.kind === "dict") return (meta.options.dicts || {})[o.type] || [];
+    return meta.options[o.kind] || [];
+  };
+
+  const control = (f) => {
+    const id = `ef_${f.name}`;
+    const req = f.required ? " required" : "";
+    const wide = f.wide ? " wide" : "";
+    let inner = "";
+    if (f.type === "select") {
+      const opts = optList(f).map((o) => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join("");
+      inner = `<select class="select" id="${id}" name="${esc(f.name)}"${req}><option value="">请选择</option>${opts}</select>`;
+    } else if (f.type === "textarea") {
+      inner = `<textarea class="input" id="${id}" name="${esc(f.name)}" rows="3"${req} placeholder="${esc(f.placeholder || "")}"></textarea>`;
+    } else {
+      const typ = f.type === "number" || f.type === "int" ? "number" : f.type === "date" ? "date" : "text";
+      const step = typ === "number" ? ' step="any"' : "";
+      inner = `<input class="input" id="${id}" name="${esc(f.name)}" type="${typ}"${step}${req} placeholder="${esc(f.placeholder || "")}" autocomplete="off">`;
+    }
+    return `<div class="entry-field${wide}">
+      <label for="${id}">${esc(f.label)}${f.required ? '<span class="req">*</span>' : ""}</label>
+      ${inner}
+    </div>`;
+  };
+
+  const renderRecent = async (key) => {
+    const box = document.getElementById("entryRecent");
+    if (!box) return;
+    box.innerHTML = `<h4>最近录入 · ${esc(entities.find((x) => x.key === key)?.label || "")}</h4><div class="entry-recent-list">加载中…</div>`;
+    try {
+      const d = await api(`/api/entry/recent?entity=${encodeURIComponent(key)}`);
+      const items = d.items || [];
+      box.innerHTML = `<h4>最近录入 · ${esc(d.label)}</h4><div class="entry-recent-list">${
+        items.length ? items.map((x) => `<span class="entry-recent-item"><b>${esc(x.label)}</b> · #${x.id}</span>`).join("") : '<span class="entry-recent-item">暂无记录</span>'
+      }</div>`;
+    } catch (e) {
+      box.innerHTML = `<h4>最近录入</h4><div class="entry-recent-list"><span class="entry-recent-item">${esc(e.message)}</span></div>`;
+    }
+  };
+
+  const renderForm = (key) => {
+    current = key;
+    const ent = entities.find((x) => x.key === key) || entities[0];
+    document.querySelectorAll(".entry-tab").forEach((b) => b.classList.toggle("active", b.dataset.key === key));
+    const formBox = document.getElementById("entryFormBox");
+    formBox.innerHTML = `
+      <div class="entry-head"><h2>${esc(ent.icon)} ${esc(ent.label)}</h2><p>${esc(ent.desc || "")}</p></div>
+      <form id="entryForm" novalidate>
+        <div class="entry-grid">${(ent.fields || []).map(control).join("")}</div>
+        <div class="entry-actions">
+          <button class="btn" type="submit" id="entrySave">保存到数据库</button>
+          <button class="btn ghost" type="reset">清空</button>
+          <span class="hint">带 * 为必填；保存后下拉选项会自动刷新</span>
+        </div>
+        <div class="entry-msg" id="entryMsg"></div>
+      </form>
+      <div class="entry-recent" id="entryRecent"></div>`;
+    const form = document.getElementById("entryForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("entryMsg");
+      const btn = document.getElementById("entrySave");
+      const data = {};
+      for (const f of ent.fields || []) {
+        const node = form.elements[f.name];
+        if (node) data[f.name] = node.value.trim();
+      }
+      btn.disabled = true;
+      btn.textContent = "写入中…";
+      msg.className = "entry-msg";
+      msg.textContent = "";
+      try {
+        const r = await api(`/api/entry/${encodeURIComponent(key)}`, { method: "POST", body: JSON.stringify(data) });
+        msg.className = "entry-msg ok";
+        msg.textContent = `已写入：${r.label} #${r.id}`;
+        toast(`已保存${r.label}`, "ok");
+        form.reset();
+        meta.options = (await api("/api/entry/meta")).options;
+        await renderRecent(key);
+      } catch (err) {
+        msg.className = "entry-msg err";
+        msg.textContent = err.message || String(err);
+        toast(err.message || "写入失败", "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "保存到数据库";
+      }
+    });
+    renderRecent(key);
+  };
+
+  el.innerHTML = `
+    <div class="section-head" style="margin-bottom:12px">
+      <div class="sh-sub">向主数据库写入井、回次、岩心段、观察、裂缝、孔洞、样品与实验</div>
+    </div>
+    <div class="entry-layout">
+      <aside class="entry-tabs">
+        <div class="entry-tabs-title">录入对象 / ENTITY</div>
+        ${entities.map((x) => `<button class="entry-tab" data-key="${esc(x.key)}"><span class="ico">${esc(x.icon || "·")}</span><span>${esc(x.label)}</span></button>`).join("")}
+      </aside>
+      <div class="entry-main"><section class="panel"><div class="panel-bd" id="entryFormBox"></div></section></div>
+    </div>`;
+  document.querySelectorAll(".entry-tab").forEach((b) => b.addEventListener("click", () => renderForm(b.dataset.key)));
+  renderForm(current);
+}
 // ============================================================ admin
 export async function admin() {
   const el = root();
@@ -825,12 +944,13 @@ export async function help() {
           <p><b>4. 看影像</b>：在“岩心影像”中点任意一张图进入浏览器；左侧深度标尺可跳转，工具条可缩放、测量。</p>
           <p><b>5. 做测量</b>：点“测量”，在图上点两下，得到长度（mm）；点“保存标注”写入数据库。</p>
           <p><b>6. 管库存</b>：岩心库管理支持按状态筛选；点“登记流转”可登记入库 / 借阅 / 取样 / 损耗。</p>
+          <p><b>7. 录数据</b>：左侧“录入”可新增井、回次、岩心段、观察、裂缝、孔洞、井壁取心、样品、实验和取心设计；保存后进入数据库。</p>
         </div>
       </section>
       <section class="panel"><div class="panel-hd"><span class="bar"></span><h3>说明</h3></div>
         <div class="panel-bd help-list">
           <p><b>数据说明</b>：当前为初版演示，15 口示范井、65 个岩心段、113 张合成影像；全库指标按 386 口井的口径展示。</p>
-          <p><b>技术栈</b>：Python 标准库 HTTP 服务 + SQLite + 原生 ES Module 前端，无外部 CDN 依赖。</p>
+          <p><b>技术栈</b>：Python 标准库 HTTP 服务 + SQLite（默认）/ PostgreSQL 16 + PostGIS + MinIO（设置 DATABASE_URL 后切换）+ 原生 ES Module 前端。</p>
           <p><b>启动</b>：<code>python app/server.py</code>，访问 <code>http://127.0.0.1:8010</code>。</p>
           <p><b>快捷键</b>：图片浏览时滚轮缩放，拖拽平移；测量模式下单击两次完成一条测量线。</p>
           <p><b>下一步</b>：接入真实扫描仪目录、Excel 批量导入、权限与审批流、柱状图模板编辑器。</p>

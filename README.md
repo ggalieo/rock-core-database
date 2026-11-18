@@ -197,3 +197,22 @@ python app/seed.py
 - 影像上传：`python scripts/upload_assets_to_minio.py`
 - 同步导出 SQLite→PostgreSQL：`python scripts/export_sqlite_to_pg.py`
 - 兼容层：`app/db_backend.py`（SQLite / PostgreSQL 切换）、`app/s3store.py`（MinIO / 本地回退）
+
+## 数据录入
+
+左侧导航“＋ 录入”进入 `#/entry`，可向主库新增 10 类数据：
+
+- 井、取心回次、岩心段
+- 岩心观察（2017 岩心 13 项）
+- 裂缝、孔洞、井壁取心
+- 样品、实验、取心设计
+
+接口：
+
+- `GET /api/entry/meta`：字段、字典、井/回次/段/样品选项
+- `GET /api/entry/recent?entity=`：最近录入
+- `POST /api/entry/<entity>`：写入并返回新记录 ID
+
+校验包括：必填项、数值/日期格式、字典编码、井号/回次/段号/样品号唯一、顶底深关系、一个段一条观察、样品只能属于段或井壁取心之一。SQLite 和 PostgreSQL 共用同一套录入逻辑。
+
+当前“录入”只写结构化数据；影像文件上传、观察/裂缝/孔洞的详情展示页面尚未接入。

@@ -118,3 +118,13 @@ python scripts/upload_assets_to_minio.py
 - `002_seed.sql` 是演示数据导出，不是生产数据迁移工具。
 - `images.size_bytes/etag` 目前由上传脚本可补，但 seed 未写入。
 - HNSW 索引和 pgvector 写入需要按实际 embedding 维度（当前 512）调整。
+
+## 9. 数据录入接口
+
+应用层新增 `app/entry.py`，由字段元数据同时驱动前端表单和后端校验：
+
+- `GET /api/entry/meta`：实体、字段、字典、井/回次/段/样品选项
+- `GET /api/entry/recent?entity=`：最近 8 条
+- `POST /api/entry/<entity>`：`well`、`run`、`section`、`observation`、`fracture`、`vug`、`sidewall`、`sample`、`experiment`、`coring_plan`
+
+写入前会校验必填、类型、字典、外键、顶底深、唯一键和“一段一观察”“样品只属于段或井壁取心之一”等规则。SQLite 使用 `lastrowid`，PostgreSQL 使用 `RETURNING id`，由 `app/db_backend.py` 统一。

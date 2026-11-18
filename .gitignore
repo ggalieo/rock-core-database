@@ -19,3 +19,6 @@ venv/
 *.log
 *.tmp
 *.bak
+
+.env
+deploy/.env

@@ -12,6 +12,9 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote
 
+from db_backend import connect as db_connect, is_postgres
+from s3store import serve_core_object
+
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
 DB_PATH = BASE / "data" / "core.db"
@@ -19,9 +22,7 @@ PORT = int(os.environ.get("PORT", "8010"))
 
 
 def db():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    return conn
+    return db_connect(DB_PATH)
 
 
 def rows(conn, sql, params=()):
@@ -212,12 +213,15 @@ def api_search(conn, qs):
 
 
 def api_stats(conn):
-    region = rows(conn, """SELECT region, COUNT(*) wells, ROUND(AVG(coverage),1) coverage,
-        ROUND(SUM(inventory),1) inventory FROM wells GROUP BY region ORDER BY inventory DESC""")
+    region = rows(conn, """SELECT region, COUNT(*) wells, ROUND(CAST(AVG(coverage) AS numeric),1) coverage,
+        ROUND(CAST(SUM(inventory) AS numeric),1) inventory FROM wells GROUP BY region ORDER BY inventory DESC""")
     lith = rows(conn, "SELECT lithology, COUNT(*) c FROM sections GROUP BY lithology ORDER BY c DESC")
     exp = rows(conn, "SELECT test_type, COUNT(*) c FROM experiments GROUP BY test_type ORDER BY c DESC")
     inv = rows(conn, "SELECT status, COUNT(*) c FROM inventory GROUP BY status")
-    years = rows(conn, "SELECT substr(scanned_at,1,4) y, COUNT(*) c FROM scans GROUP BY y ORDER BY y")
+    if is_postgres():
+        years = rows(conn, "SELECT EXTRACT(YEAR FROM scanned_at)::int y, COUNT(*) c FROM scans GROUP BY y ORDER BY y")
+    else:
+        years = rows(conn, "SELECT substr(scanned_at,1,4) y, COUNT(*) c FROM scans GROUP BY y ORDER BY y")
     return {"region": region, "lith": lith, "exp": exp, "inv": inv, "years": years}
 
 
@@ -229,15 +233,19 @@ def api_inventory(conn, qs):
     items = rows(conn, f"""SELECT inv.*, w.code, w.name, s.section_no, s.top_md, s.bottom_md
         FROM inventory inv JOIN wells w ON w.id=inv.well_id LEFT JOIN sections s ON s.id=inv.section_id
         WHERE {' AND '.join(where)} ORDER BY inv.id LIMIT 60""", params)
-    summary = rows(conn, "SELECT status, COUNT(*) c, ROUND(SUM(quantity),2) q FROM inventory GROUP BY status")
+    summary = rows(conn, "SELECT status, COUNT(*) c, ROUND(CAST(SUM(quantity) AS numeric),2) q FROM inventory GROUP BY status")
     locations = rows(conn, "SELECT location, COUNT(*) c FROM inventory GROUP BY location ORDER BY c DESC LIMIT 12")
     return {"items": items, "summary": summary, "locations": locations}
 
 
 def api_admin(conn):
+    if is_postgres():
+        audit = rows(conn, "SELECT id, user_name AS user, action, target, details, created_at FROM audit ORDER BY id DESC LIMIT 12")
+    else:
+        audit = rows(conn, "SELECT * FROM audit ORDER BY id DESC LIMIT 12")
     return {
-        "users": rows(conn, "SELECT * FROM users ORDER BY id"),
-        "audit": rows(conn, "SELECT * FROM audit ORDER BY id DESC LIMIT 12"),
+        "users": rows(conn, "SELECT id, name, account, role, org, last_login FROM users ORDER BY id"),
+        "audit": audit,
         "dicts": [
             {"type": "地层", "count": 26}, {"type": "岩性", "count": 48},
             {"type": "图像类型", "count": 10}, {"type": "实验类型", "count": 15},
@@ -257,13 +265,19 @@ def post_annotation(conn, iid, body):
     if not img:
         return None
     geom = body.get("geometry") or {}
-    cur = conn.execute("""INSERT INTO annotations(image_id,type,geometry,value,unit,label,author,created_at)
-        VALUES(?,?,?,?,?,?,?,?)""",
-        (iid, body.get("type", "length"), json.dumps(geom, ensure_ascii=False),
-         body.get("value"), body.get("unit", "mm"), body.get("label", ""),
-         body.get("author", "admin"), datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    params = (iid, body.get("type", "length"), json.dumps(geom, ensure_ascii=False),
+              body.get("value"), body.get("unit", "mm"), body.get("label", ""),
+              body.get("author", "admin"), datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    if is_postgres():
+        cur = conn.execute("""INSERT INTO annotations(image_id,type,geometry,value,unit,label,author,created_at)
+            VALUES(?,?,?,?,?,?,?,?) RETURNING id""", params)
+        new_id = cur.fetchone()["id"]
+    else:
+        cur = conn.execute("""INSERT INTO annotations(image_id,type,geometry,value,unit,label,author,created_at)
+            VALUES(?,?,?,?,?,?,?,?)""", params)
+        new_id = cur.lastrowid
     conn.commit()
-    return {"id": cur.lastrowid}
+    return {"id": new_id}
 
 
 def post_txn(conn, body):
@@ -361,6 +375,8 @@ class Handler(BaseHTTPRequestHandler):
             conn.close()
 
     def serve_static(self, path):
+        if serve_core_object(self, path):
+            return
         if path in ("", "/"):
             path = "/index.html"
         rel = path.lstrip("/").replace("\\", "/")

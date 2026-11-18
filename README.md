@@ -184,3 +184,16 @@ python app/seed.py
 
 - 分支：`main`
 - 后续每次改动提交后，`post-commit` 钩子会自动推送到该远程仓库。
+
+## PostgreSQL + PostGIS + MinIO + pgvector
+
+当前仓库已增加生产架构的部署与迁移文件，默认仍可用 SQLite 演示；设置 `DATABASE_URL` 后应用自动切到 PostgreSQL。
+
+- 架构说明：[docs/postgresql-architecture.md](docs/postgresql-architecture.md)
+- 部署：`cd deploy && docker compose up -d --build`
+- 应用：<http://127.0.0.1:8010>；MinIO 控制台：<http://127.0.0.1:9001>
+- PostgreSQL 初始化：`db/postgres/001_schema.sql`（PostGIS + pgvector + JSONB + 外键/索引）
+- 演示数据导出：`db/postgres/002_seed.sql`（由当前 SQLite 库生成）
+- 影像上传：`python scripts/upload_assets_to_minio.py`
+- 同步导出 SQLite→PostgreSQL：`python scripts/export_sqlite_to_pg.py`
+- 兼容层：`app/db_backend.py`（SQLite / PostgreSQL 切换）、`app/s3store.py`（MinIO / 本地回退）

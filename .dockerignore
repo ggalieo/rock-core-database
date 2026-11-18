@@ -1,0 +1,17 @@
+.git
+.gitignore
+.gitattributes
+docs
+调研资料
+*.pptx
+*.docx
+*.pdf
+*.zip
+*.xlsx
+*.bak
+__pycache__
+*.pyc
+.dsh-office-*
+
+.env
+deploy/.env

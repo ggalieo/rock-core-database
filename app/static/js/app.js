@@ -13,6 +13,8 @@ const META = {
   inventory: ["库存管理", "INVENTORY"],
   stats: ["分析", "ANALYTICS"],
   admin: ["设置", "SETTINGS"],
+  login: ["登录", "SIGN IN"],
+  logout: ["退出", "SIGN OUT"],
   help: ["帮助", "HELP"],
   well: ["井档案", "WELL DOSSIER"],
   image: ["影像浏览", "IMAGE VIEWER"],
@@ -51,6 +53,8 @@ async function route() {
     else if (clean === "/inventory") { active = "inventory"; await pages.inventory(); }
     else if (clean === "/stats") { active = "stats"; await pages.stats(); }
     else if (clean === "/admin") { active = "admin"; await pages.admin(); }
+    else if (clean === "/login") { active = "login"; await pages.login(); }
+    else if (clean === "/logout") { active = "logout"; await pages.logout(); }
     else if (clean === "/help") { active = "help"; await pages.help(); }
     else { active = "home"; location.hash = "#/home"; return; }
   } catch (e) {
@@ -63,6 +67,7 @@ async function route() {
   }
   setActive(active);
   setMeta(active);
+  refreshMe();
   window.scrollTo(0, 0);
 }
 
@@ -84,9 +89,26 @@ function bindSearch() {
   });
 }
 
+async function refreshMe() {
+  try {
+    const r = await fetch("/api/auth/me");
+    const d = await r.json();
+    const link = document.getElementById("loginLink");
+    const chip = document.getElementById("userChip");
+    if (d.user) {
+      if (link) link.textContent = d.user.name;
+      if (chip) chip.textContent = (d.user.name || "U").slice(0, 2).toUpperCase();
+    } else {
+      if (link) link.textContent = "登录";
+      if (chip) chip.textContent = "GU";
+    }
+  } catch (e) {}
+}
+
 function init() {
   clock();
   setInterval(clock, 1000 * 30);
+  refreshMe();
   bindSearch();
   window.addEventListener("hashchange", route);
   if (!location.hash) location.hash = "#/home";
@@ -99,4 +121,4 @@ if (document.readyState === "loading") {
   init();
 }
 
-window.coreDemo = { go: (h) => location.hash = h, toast };
+window.coreDemo = { go: (h) => location.hash = h, toast, refreshMe };

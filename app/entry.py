@@ -8,6 +8,7 @@ import re
 from datetime import datetime
 
 from db_backend import is_postgres
+import audit
 
 
 class EntryError(Exception):
@@ -239,6 +240,27 @@ ENTITIES = {
             _f("approved_at", "审批日期", "date"),
         ],
     },
+    "image": {
+        "label": "影像",
+        "icon": "▧",
+        "table": "images",
+        "desc": "上传岩心表面、展开、荧光、岩心箱或薄片影像；文件写入本地/MinIO。",
+        "list_fields": ["well_id", "type", "top_md", "bottom_md", "captured_at"],
+        "label_expr": "COALESCE(type,'影像') || ' / #' || CAST(id AS text)",
+        "fields": [
+            _f("well_id", "所属井", "select", True, options={"kind": "wells"}),
+            _f("run_id", "回次", "select", options={"kind": "runs"}),
+            _f("section_id", "岩心段", "select", options={"kind": "sections"}),
+            _f("type", "影像类型", "select", True, options=["SURFACE", "ROLLED", "FLUORESCENCE", "BOX", "THIN_SECTION"]),
+            _f("light", "光性", placeholder="自然光 / 紫外光"),
+            _f("top_md", "顶深", "number"),
+            _f("bottom_md", "底深", "number"),
+            _f("captured_at", "拍摄时间", "date"),
+            _f("device", "设备"),
+            _f("operator", "操作人"),
+            _f("quality", "质量", placeholder="合格 / 可疑"),
+        ],
+    },
 }
 
 
@@ -331,17 +353,18 @@ def _check_choice(conn, field, value):
         raise EntryError(f"{field['label']}取值不正确", 400)
 
 
-def records(conn, entity, limit=40):
+def records(conn, entity, limit=40, deleted=False):
     spec = ENTITIES.get(entity)
     if not spec:
         raise EntryError("未知录入对象", 404)
     wanted = spec.get("list_fields", [f["name"] for f in spec["fields"][:4]])
     fields = [f for f in spec["fields"] if f["name"] in wanted]
     cols = ["id"] + [f["name"] for f in fields]
-    sql = f'SELECT {", ".join(cols)} FROM {spec["table"]} ORDER BY id DESC LIMIT ?'
+    where = "WHERE deleted_at IS NOT NULL" if deleted else "WHERE deleted_at IS NULL"
+    sql = f'SELECT {", ".join(cols)} FROM {spec["table"]} {where} ORDER BY id DESC LIMIT ?'
     items = _rows(conn, sql, (int(limit),))
-    total = _one(conn, f'SELECT COUNT(*) AS c FROM {spec["table"]}')["c"]
-    return {"entity": entity, "label": spec["label"], "total": total,
+    total = _one(conn, f'SELECT COUNT(*) AS c FROM {spec["table"]} {where}')["c"]
+    return {"entity": entity, "label": spec["label"], "total": total, "deleted": bool(deleted),
             "fields": [{"name": "id", "label": "ID"}] + [{"name": f["name"], "label": f["label"]} for f in fields],
             "items": items}
 
@@ -399,7 +422,7 @@ def _mirror_update(conn, entity, rid, data):
                      (rid, data["top_md"], data["bottom_md"]))
 
 
-def update(conn, entity, rid, body):
+def update(conn, entity, rid, body, actor='system'):
     spec = ENTITIES.get(entity)
     if not spec:
         raise EntryError("未知录入对象", 404)
@@ -417,6 +440,10 @@ def update(conn, entity, rid, body):
         if val is not None:
             _check_choice(conn, field, val)
         data[field["name"]] = val
+
+    for ref in ("well_id", "run_id", "section_id", "sidewall_id", "sample_id"):
+        if ref in data:
+            data[ref] = _resolve_ref(conn, ref, data[ref])
 
     # keep required fields that were omitted
     for field in spec["fields"]:
@@ -518,6 +545,7 @@ def update(conn, entity, rid, body):
     try:
         conn.execute(f'UPDATE {spec["table"]} SET {sets} WHERE id=?', [data[c] for c in cols] + [rid])
         _mirror_update(conn, entity, rid, data)
+        audit.log(conn, actor, "更新", f"{spec['label']} #{rid}", data)
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -544,10 +572,12 @@ DEPENDENTS = {
     "sample": [("experiments", "sample_id")],
     "experiment": [],
     "coring_plan": [],
+    "image": [("annotations", "image_id"), ("image_calibration", "image_id"),
+              ("core_fracture", "image_id"), ("core_vug", "image_id")],
 }
 
 
-def delete(conn, entity, rid):
+def delete(conn, entity, rid, actor='system'):
     spec = ENTITIES.get(entity)
     if not spec:
         raise EntryError("未知录入对象", 404)
@@ -558,14 +588,71 @@ def delete(conn, entity, rid):
         if n:
             raise EntryError(f"存在 {n} 条关联记录，不能删除；请先处理子记录", 409)
     try:
-        conn.execute(f'DELETE FROM {spec["table"]} WHERE id=?', (rid,))
+        conn.execute(f'UPDATE {spec["table"]} SET deleted_at=? WHERE id=?',
+                     (datetime.now().strftime("%Y-%m-%d %H:%M:%S"), rid))
+        audit.log(conn, actor, "删除", f"{spec['label']} #{rid}", {})
         conn.commit()
     except Exception as e:
         conn.rollback()
         raise EntryError(f"删除失败：{str(e)[:200]}", 500)
     return {"id": rid, "entity": entity, "label": spec["label"], "deleted": True}
 
-def create(conn, entity, body):
+
+def restore(conn, entity, rid, actor="system"):
+    spec = ENTITIES.get(entity)
+    if not spec:
+        raise EntryError("未知录入对象", 404)
+    row = _one(conn, f'SELECT * FROM {spec["table"]} WHERE id=?', (rid,))
+    if not row:
+        raise EntryError("记录不存在", 404)
+    if not row.get("deleted_at"):
+        raise EntryError("记录未被删除", 400)
+    try:
+        conn.execute(f'UPDATE {spec["table"]} SET deleted_at=NULL WHERE id=?', (rid,))
+        audit.log(conn, actor, "恢复", f"{spec['label']} #{rid}", {})
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise EntryError(f"恢复失败：{str(e)[:200]}", 500)
+    return {"id": rid, "entity": entity, "label": spec["label"], "restored": True}
+
+
+def _resolve_ref(conn, name, value):
+    if value is None or isinstance(value, int):
+        return value
+    s = str(value).strip()
+    if not s:
+        return None
+    if s.isdigit():
+        return int(s)
+    if name == "well_id":
+        row = _one(conn, "SELECT id FROM wells WHERE code=?", (s,))
+    elif name == "run_id":
+        parts = re.split(r"\s*/\s*", s)
+        if len(parts) >= 2:
+            row = _one(conn, """SELECT r.id FROM runs r JOIN wells w ON w.id=r.well_id
+                WHERE w.code=? AND r.run_no=?""", (parts[0], int(parts[1]) if parts[1].isdigit() else -1))
+        else:
+            row = None
+    elif name == "section_id":
+        parts = re.split(r"\s*/\s*", s)
+        if len(parts) >= 3:
+            row = _one(conn, """SELECT s.id FROM sections s JOIN runs r ON r.id=s.run_id
+                JOIN wells w ON w.id=s.well_id WHERE w.code=? AND r.run_no=? AND s.section_no=?""",
+                (parts[0], int(parts[1]) if parts[1].isdigit() else -1, parts[2]))
+        else:
+            row = None
+    elif name == "sample_id":
+        row = _one(conn, "SELECT id FROM samples WHERE sample_no=?", (s,))
+    elif name == "sidewall_id":
+        row = _one(conn, "SELECT id FROM core_sidewall WHERE sample_no=?", (s,))
+    else:
+        row = None
+    if not row:
+        raise EntryError(f"找不到关联记录：{s}", 400)
+    return row["id"]
+
+def create(conn, entity, body, actor='system', dry_run=False):
     spec = ENTITIES.get(entity)
     if not spec:
         raise EntryError("未知录入对象", 404)
@@ -579,7 +666,13 @@ def create(conn, entity, body):
             _check_choice(conn, field, val)
             data[field["name"]] = val
 
+    for ref in ("well_id", "run_id", "section_id", "sidewall_id", "sample_id"):
+        if ref in data:
+            data[ref] = _resolve_ref(conn, ref, data[ref])
+
     # parent checks and automatic fields
+    if entity == "image":
+        raise EntryError("请使用影像上传按钮", 400)
     if entity == "well":
         if _one(conn, "SELECT 1 AS ok FROM wells WHERE code=?", (data["code"],)):
             raise EntryError("井号已存在", 409)
@@ -651,6 +744,9 @@ def create(conn, entity, body):
         if _one(conn, "SELECT 1 AS ok FROM coring_plan WHERE run_id=?", (data["run_id"],)):
             raise EntryError("该回次已有取心设计", 409)
 
+    if dry_run:
+        return {"id": None, "entity": entity, "label": spec["label"], "dry_run": True}
+
     cols = list(data.keys())
     if not cols:
         raise EntryError("没有可写入的字段", 400)
@@ -679,6 +775,7 @@ def create(conn, entity, body):
             elif entity == "experiment" and data.get("top_md") is not None and data.get("bottom_md") is not None:
                 conn.execute("INSERT INTO experiment_depth(experiment_id, depth) VALUES (?, numrange(?, ?, '[)'))",
                              (new_id, data["top_md"], data["bottom_md"]))
+        audit.log(conn, actor, "新增", f"{spec['label']} #{new_id}", data)
         conn.commit()
     except Exception as e:
         conn.rollback() if hasattr(conn, "rollback") else None

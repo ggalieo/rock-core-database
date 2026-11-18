@@ -22,3 +22,4 @@ venv/
 
 .env
 deploy/.env
+.edge-cdp/

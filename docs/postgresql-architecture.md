@@ -138,3 +138,12 @@ python scripts/upload_assets_to_minio.py
 - `DELETE /api/entry/<entity>/<id>`：删除；有子记录时返回 409，不级联删除
 - `GET /api/entry/template?entity=`：下载 Excel 模板（含字段说明和井/回次/段/样品参考 ID）
 - `POST /api/entry/import/<entity>`：Base64 上传 `.xlsx` / `.xlsm`，逐行校验并返回成功/失败明细
+
+## 11. P0 安全与数据治理
+
+- 登录：`/api/auth/login`、`/api/auth/logout`、`/api/auth/me`；会话 Cookie 为 HttpOnly/SameSite=Lax。
+- RBAC：`admin`、`editor`、`viewer`；写接口只允许 admin/editor。
+- 审计：`audit` 表新增 `details`，所有写操作记录操作人、动作、对象和摘要。
+- 软删除：核心表新增 `deleted_at`；列表默认排除，回收站/恢复接口保留记录。
+- 影像：`images` 新增 `object_key/thumb_key/content_type/size_bytes/etag/deleted_at`；上传后本地 + MinIO 双写。
+- 注意：P0 实现的是本地会话和基础 RBAC；生产还需接 SSO/LDAP、CSRF token、审计留存策略和对象存储生命周期。

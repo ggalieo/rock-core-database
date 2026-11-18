@@ -17,8 +17,12 @@ from db_backend import connect as db_connect, is_postgres
 from s3store import serve_core_object
 from entry import (EntryError, create as entry_create, delete as entry_delete,
                    get_record as entry_get, meta as entry_meta, recent as entry_recent,
-                   records as entry_records, update as entry_update)
+                   records as entry_records, restore as entry_restore,
+                   update as entry_update)
+import auth
+import audit
 from excel_entry import import_rows as entry_import, template as entry_template
+import image_entry
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -49,18 +53,33 @@ def json_default(value):
     return str(value)
 
 
-def ok(handler, data, status=200):
+def ok(handler, data, status=200, cookie=None, clear_cookie=False):
     body = json.dumps(data, ensure_ascii=False, default=json_default).encode("utf-8")
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Content-Length", str(len(body)))
     handler.send_header("Cache-Control", "no-store")
+    if clear_cookie:
+        auth.clear_cookie(handler)
+    elif cookie:
+        auth.set_cookie(handler, cookie)
     handler.end_headers()
     handler.wfile.write(body)
 
 
 def fail(handler, msg, status=400):
     ok(handler, {"error": msg}, status)
+
+
+def writer(handler):
+    user = auth.current_user(handler)
+    if not user:
+        fail(handler, "请先登录", 401)
+        return None
+    if user.get("role_key") not in ("admin", "editor"):
+        fail(handler, "没有写入权限", 403)
+        return None
+    return user
 
 
 def send_file(handler, data, filename, content_type):
@@ -99,19 +118,20 @@ def api_overview(conn):
         "updated_at": meta.get("updated_at", ""),
     }
     scan_by_well = rows(conn, """SELECT code, name, scanned AS value FROM wells
-        WHERE scanned > 0 ORDER BY scanned DESC LIMIT 7""")
+        WHERE scanned > 0 AND deleted_at IS NULL ORDER BY scanned DESC LIMIT 7""")
     latest = rows(conn, """SELECT s.id, s.top_md, s.bottom_md, s.scanned_at, s.images_count,
         w.id AS well_id, w.code, w.name,
         (SELECT i.id FROM images i WHERE i.well_id=w.id AND i.type='SURFACE' ORDER BY i.id LIMIT 1) AS image_id
-        FROM scans s JOIN wells w ON w.id=s.well_id ORDER BY s.scanned_at DESC LIMIT 6""")
+        FROM scans s JOIN wells w ON w.id=s.well_id
+        WHERE w.deleted_at IS NULL ORDER BY s.scanned_at DESC LIMIT 6""")
     for it in latest:
         it["thumb_url"] = f"/assets/core/thumb_{it['image_id']}.jpg" if it["image_id"] else ""
     map_points = rows(conn, """SELECT id, code, name, region, lon, lat, coverage, inventory
-        FROM wells ORDER BY id""")
+        FROM wells WHERE deleted_at IS NULL ORDER BY id""")
     todos = {
-        "pending": one(conn, "SELECT COUNT(*) c FROM wells WHERE status='待扫描'")["c"],
-        "partial": one(conn, "SELECT COUNT(*) c FROM wells WHERE status='部分扫描'")["c"],
-        "missing": one(conn, "SELECT COUNT(*) c FROM wells WHERE coverage=0")["c"],
+        "pending": one(conn, "SELECT COUNT(*) c FROM wells WHERE status='待扫描' AND deleted_at IS NULL")["c"],
+        "partial": one(conn, "SELECT COUNT(*) c FROM wells WHERE status='部分扫描' AND deleted_at IS NULL")["c"],
+        "missing": one(conn, "SELECT COUNT(*) c FROM wells WHERE coverage=0 AND deleted_at IS NULL")["c"],
         "annotations": one(conn, "SELECT COUNT(*) c FROM annotations")["c"],
     }
     return {
@@ -132,7 +152,7 @@ def api_wells(conn, qs):
     tectonic = qs.get("tectonic", [""])[0]
     page = max(1, int(qs.get("page", ["1"])[0] or 1))
     size = min(50, max(1, int(qs.get("page_size", ["10"])[0] or 10)))
-    where, params = ["1=1"], []
+    where, params = ["deleted_at IS NULL"], []
     if q:
         where.append("(code LIKE ? OR name LIKE ? OR region LIKE ?)")
         params += [f"%{q}%"] * 3
@@ -151,20 +171,20 @@ def api_wells(conn, qs):
         prods = rows(conn, "SELECT code, status FROM products WHERE well_id=?", (it["id"],))
         it["products"] = {p["code"]: p["status"] for p in prods}
     filters = {
-        "regions": [r["region"] for r in conn.execute("SELECT DISTINCT region FROM wells ORDER BY region")],
-        "years": [r["year"] for r in conn.execute("SELECT DISTINCT year FROM wells ORDER BY year DESC")],
-        "tectonics": [r["tectonic"] for r in conn.execute("SELECT DISTINCT tectonic FROM wells ORDER BY tectonic")],
+        "regions": [r["region"] for r in conn.execute("SELECT DISTINCT region FROM wells WHERE deleted_at IS NULL ORDER BY region")],
+        "years": [r["year"] for r in conn.execute("SELECT DISTINCT year FROM wells WHERE deleted_at IS NULL ORDER BY year DESC")],
+        "tectonics": [r["tectonic"] for r in conn.execute("SELECT DISTINCT tectonic FROM wells WHERE deleted_at IS NULL ORDER BY tectonic")],
     }
     return {"items": items, "total": total, "page": page, "page_size": size, "filters": filters}
 
 
 def api_well_detail(conn, wid):
-    well = one(conn, "SELECT * FROM wells WHERE id=?", (wid,))
+    well = one(conn, "SELECT * FROM wells WHERE id=? AND deleted_at IS NULL", (wid,))
     if not well:
         return None
-    runs = rows(conn, "SELECT * FROM runs WHERE well_id=? ORDER BY run_no", (wid,))
+    runs = rows(conn, "SELECT * FROM runs WHERE well_id=? AND deleted_at IS NULL ORDER BY run_no", (wid,))
     for run in runs:
-        secs = rows(conn, "SELECT * FROM sections WHERE run_id=? ORDER BY section_no", (run["id"],))
+        secs = rows(conn, "SELECT * FROM sections WHERE run_id=? AND deleted_at IS NULL ORDER BY section_no", (run["id"],))
         for s in secs:
             img = one(conn, """SELECT id, file, thumb FROM images WHERE section_id=? AND type='SURFACE'
                 ORDER BY id LIMIT 1""", (s["id"],))
@@ -180,13 +200,38 @@ def api_well_detail(conn, wid):
                                 "vertical": image_url(img["file"].replace(".jpg", "_v.jpg"))} if img else None
     images = enrich_images(conn, rows(conn, """SELECT i.*, s.section_no, r.run_no FROM images i
         LEFT JOIN sections s ON s.id=i.section_id LEFT JOIN runs r ON r.id=i.run_id
-        WHERE i.well_id=? ORDER BY i.top_md, i.type""", (wid,)))
-    experiments = rows(conn, "SELECT * FROM experiments WHERE well_id=? ORDER BY id", (wid,))
+        WHERE i.well_id=? AND i.deleted_at IS NULL ORDER BY i.top_md, i.type""", (wid,)))
+    experiments = rows(conn, "SELECT * FROM experiments WHERE well_id=? AND deleted_at IS NULL ORDER BY id", (wid,))
     inventory = rows(conn, """SELECT inv.*, s.section_no, s.top_md, s.bottom_md FROM inventory inv
         LEFT JOIN sections s ON s.id=inv.section_id WHERE inv.well_id=? ORDER BY inv.id""", (wid,))
     prods = {p["code"]: p["status"] for p in conn.execute("SELECT code,status FROM products WHERE well_id=?", (wid,))}
+    core = {
+        "observations": rows(conn, """SELECT o.*, s.section_no, s.top_md, s.bottom_md,
+            s.lithology, s.fluorescence, s.oil_show, r.recovery
+            FROM core_observation o JOIN sections s ON s.id=o.section_id
+            JOIN runs r ON r.id=s.run_id
+            WHERE s.well_id=? AND o.deleted_at IS NULL AND s.deleted_at IS NULL
+            ORDER BY s.top_md""", (wid,)),
+        "fractures": rows(conn, """SELECT f.*, s.section_no, s.top_md, s.bottom_md
+            FROM core_fracture f JOIN sections s ON s.id=f.section_id
+            WHERE s.well_id=? AND f.deleted_at IS NULL AND s.deleted_at IS NULL
+            ORDER BY s.top_md, f.id""", (wid,)),
+        "vugs": rows(conn, """SELECT v.*, s.section_no, s.top_md, s.bottom_md
+            FROM core_vug v JOIN sections s ON s.id=v.section_id
+            WHERE s.well_id=? AND v.deleted_at IS NULL AND s.deleted_at IS NULL
+            ORDER BY s.top_md, v.id""", (wid,)),
+        "sidewalls": rows(conn, """SELECT * FROM core_sidewall
+            WHERE well_id=? AND deleted_at IS NULL ORDER BY depth_md""", (wid,)),
+        "samples": rows(conn, """SELECT sp.*, s.section_no
+            FROM samples sp LEFT JOIN sections s ON s.id=sp.section_id
+            WHERE sp.well_id=? AND sp.deleted_at IS NULL ORDER BY sp.id""", (wid,)),
+        "plans": rows(conn, """SELECT cp.*, r.run_no
+            FROM coring_plan cp JOIN runs r ON r.id=cp.run_id
+            WHERE r.well_id=? AND cp.deleted_at IS NULL AND r.deleted_at IS NULL
+            ORDER BY r.run_no""", (wid,)),
+    }
     return {"well": well, "runs": runs, "images": images, "experiments": experiments,
-            "inventory": inventory, "products": prods}
+            "inventory": inventory, "products": prods, "core": core}
 
 
 def api_image_detail(conn, iid):
@@ -195,7 +240,7 @@ def api_image_detail(conn, iid):
         s.lithology, s.description, s.color
         FROM images i JOIN wells w ON w.id=i.well_id
         LEFT JOIN runs r ON r.id=i.run_id LEFT JOIN sections s ON s.id=i.section_id
-        WHERE i.id=?""", (iid,))
+        WHERE i.id=? AND i.deleted_at IS NULL""", (iid,))
     if not img:
         return None
     img["url"] = image_url(img["file"])
@@ -224,15 +269,15 @@ def api_search(conn, qs):
     if not q:
         return {"q": q, "wells": [], "sections": [], "images": []}
     like = f"%{q}%"
-    wells = rows(conn, "SELECT * FROM wells WHERE code LIKE ? OR name LIKE ? OR region LIKE ? OR tectonic LIKE ? LIMIT 12",
+    wells = rows(conn, "SELECT * FROM wells WHERE deleted_at IS NULL AND (code LIKE ? OR name LIKE ? OR region LIKE ? OR tectonic LIKE ?) LIMIT 12",
                  (like, like, like, like))
     sections = rows(conn, """SELECT s.*, w.code, w.name,
         (SELECT i.thumb FROM images i WHERE i.section_id=s.id AND i.type='SURFACE' ORDER BY i.id LIMIT 1) AS thumb
         FROM sections s JOIN wells w ON w.id=s.well_id
-        WHERE s.lithology LIKE ? OR s.description LIKE ? OR s.section_no LIKE ? OR s.oil_show LIKE ?
+        WHERE s.deleted_at IS NULL AND (s.lithology LIKE ? OR s.description LIKE ? OR s.section_no LIKE ? OR s.oil_show LIKE ?)
         ORDER BY s.id LIMIT 20""", (like, like, like, like))
     images = enrich_images(conn, rows(conn, """SELECT i.*, w.code, w.name FROM images i JOIN wells w ON w.id=i.well_id
-        WHERE i.type LIKE ? OR w.code LIKE ? OR w.name LIKE ? ORDER BY i.id LIMIT 12""",
+        WHERE i.deleted_at IS NULL AND w.deleted_at IS NULL AND (i.type LIKE ? OR w.code LIKE ? OR w.name LIKE ?) ORDER BY i.id LIMIT 12""",
                                      (like, like, like)))
     return {"q": q, "wells": wells, "sections": sections, "images": images}
 
@@ -240,13 +285,13 @@ def api_search(conn, qs):
 def api_stats(conn):
     region = rows(conn, """SELECT region, COUNT(*) wells, ROUND(CAST(AVG(coverage) AS numeric),1) coverage,
         ROUND(CAST(SUM(inventory) AS numeric),1) inventory FROM wells GROUP BY region ORDER BY inventory DESC""")
-    lith = rows(conn, "SELECT lithology, COUNT(*) c FROM sections GROUP BY lithology ORDER BY c DESC")
-    exp = rows(conn, "SELECT test_type, COUNT(*) c FROM experiments GROUP BY test_type ORDER BY c DESC")
+    lith = rows(conn, "SELECT lithology, COUNT(*) c FROM sections WHERE deleted_at IS NULL GROUP BY lithology ORDER BY c DESC")
+    exp = rows(conn, "SELECT test_type, COUNT(*) c FROM experiments WHERE deleted_at IS NULL GROUP BY test_type ORDER BY c DESC")
     inv = rows(conn, "SELECT status, COUNT(*) c FROM inventory GROUP BY status")
     if is_postgres():
-        years = rows(conn, "SELECT EXTRACT(YEAR FROM scanned_at)::int y, COUNT(*) c FROM scans GROUP BY y ORDER BY y")
+        years = rows(conn, "SELECT EXTRACT(YEAR FROM scanned_at)::int y, COUNT(*) c FROM scans s JOIN wells w ON w.id=s.well_id WHERE w.deleted_at IS NULL GROUP BY y ORDER BY y")
     else:
-        years = rows(conn, "SELECT substr(scanned_at,1,4) y, COUNT(*) c FROM scans GROUP BY y ORDER BY y")
+        years = rows(conn, "SELECT substr(s.scanned_at,1,4) y, COUNT(*) c FROM scans s JOIN wells w ON w.id=s.well_id WHERE w.deleted_at IS NULL GROUP BY y ORDER BY y")
     return {"region": region, "lith": lith, "exp": exp, "inv": inv, "years": years}
 
 
@@ -257,8 +302,9 @@ def api_inventory(conn, qs):
         where.append("inv.status=?"); params.append(status)
     items = rows(conn, f"""SELECT inv.*, w.code, w.name, s.section_no, s.top_md, s.bottom_md
         FROM inventory inv JOIN wells w ON w.id=inv.well_id LEFT JOIN sections s ON s.id=inv.section_id
-        WHERE {' AND '.join(where)} ORDER BY inv.id LIMIT 60""", params)
-    summary = rows(conn, "SELECT status, COUNT(*) c, ROUND(CAST(SUM(quantity) AS numeric),2) q FROM inventory GROUP BY status")
+        WHERE {' AND '.join(where)} AND w.deleted_at IS NULL AND (s.id IS NULL OR s.deleted_at IS NULL)
+        ORDER BY inv.id LIMIT 60""", params)
+    summary = rows(conn, "SELECT status, COUNT(*) c, ROUND(CAST(SUM(quantity) AS numeric),2) q FROM inventory inv JOIN wells w ON w.id=inv.well_id WHERE w.deleted_at IS NULL GROUP BY status")
     locations = rows(conn, "SELECT location, COUNT(*) c FROM inventory GROUP BY location ORDER BY c DESC LIMIT 12")
     return {"items": items, "summary": summary, "locations": locations}
 
@@ -277,15 +323,15 @@ def api_admin(conn):
             {"type": "库存状态", "count": 6},
         ],
         "counts": {
-            "wells": one(conn, "SELECT COUNT(*) c FROM wells")["c"],
-            "images": one(conn, "SELECT COUNT(*) c FROM images")["c"],
-            "sections": one(conn, "SELECT COUNT(*) c FROM sections")["c"],
-            "experiments": one(conn, "SELECT COUNT(*) c FROM experiments")["c"],
+            "wells": one(conn, "SELECT COUNT(*) c FROM wells WHERE deleted_at IS NULL")["c"],
+            "images": one(conn, "SELECT COUNT(*) c FROM images WHERE deleted_at IS NULL")["c"],
+            "sections": one(conn, "SELECT COUNT(*) c FROM sections WHERE deleted_at IS NULL")["c"],
+            "experiments": one(conn, "SELECT COUNT(*) c FROM experiments WHERE deleted_at IS NULL")["c"],
         },
     }
 
 
-def post_annotation(conn, iid, body):
+def post_annotation(conn, iid, body, actor="system"):
     img = one(conn, "SELECT id FROM images WHERE id=?", (iid,))
     if not img:
         return None
@@ -301,11 +347,12 @@ def post_annotation(conn, iid, body):
         cur = conn.execute("""INSERT INTO annotations(image_id,type,geometry,value,unit,label,author,created_at)
             VALUES(?,?,?,?,?,?,?,?)""", params)
         new_id = cur.lastrowid
+    audit.log(conn, actor, "标注", f"影像 #{iid}", geom)
     conn.commit()
     return {"id": new_id}
 
 
-def post_txn(conn, body):
+def post_txn(conn, body, actor="system"):
     sid = body.get("section_id")
     sec = one(conn, "SELECT * FROM sections WHERE id=?", (sid,))
     if not sec:
@@ -327,6 +374,7 @@ def post_txn(conn, body):
         VALUES(?,?,?,?,?,?,?,?,?,?)""",
         (sec["well_id"], sid, typ, qty, "m", from_loc, to_loc, body.get("operator", "admin"),
          datetime.now().strftime("%Y-%m-%d %H:%M"), reason))
+    audit.log(conn, actor, "库存流转", f"岩心段 #{sid}", {"txn_type": typ, "quantity": qty})
     conn.commit()
     return {"ok": True}
 
@@ -347,6 +395,8 @@ class Handler(BaseHTTPRequestHandler):
             try:
                 if path == "/api/health":
                     return ok(self, {"ok": True, "time": datetime.now().isoformat()})
+                if path == "/api/auth/me":
+                    return ok(self, {"user": auth.current_user(self)})
                 if path == "/api/overview":
                     return ok(self, api_overview(conn))
                 if path == "/api/wells":
@@ -366,6 +416,9 @@ class Handler(BaseHTTPRequestHandler):
                 if path == "/api/inventory":
                     return ok(self, api_inventory(conn, qs))
                 if path == "/api/admin":
+                    user = auth.current_user(self)
+                    if not user or user.get("role_key") != "admin":
+                        return fail(self, "需要管理员权限", 403)
                     return ok(self, api_admin(conn))
                 if path == "/api/entry/meta":
                     return ok(self, entry_meta(conn))
@@ -374,7 +427,8 @@ class Handler(BaseHTTPRequestHandler):
                     return ok(self, entry_recent(conn, entity))
                 if path == "/api/entry/list":
                     entity = qs.get("entity", [""])[0]
-                    return ok(self, entry_records(conn, entity))
+                    deleted = qs.get("deleted", ["0"])[0].lower() in ("1", "true", "yes")
+                    return ok(self, entry_records(conn, entity, deleted=deleted))
                 if path == "/api/entry/template":
                     entity = qs.get("entity", [""])[0]
                     data = entry_template(conn, entity)
@@ -404,9 +458,12 @@ class Handler(BaseHTTPRequestHandler):
             return fail(self, "invalid json: %s" % e, 400)
         conn = db()
         try:
+            user = writer(self)
+            if not user:
+                return
             m = re.match(r"^/api/entry/([a-z_]+)/(\d+)$", path)
             if m:
-                return ok(self, entry_update(conn, m.group(1), int(m.group(2)), body))
+                return ok(self, entry_update(conn, m.group(1), int(m.group(2)), body, actor=user))
             return fail(self, "not found", 404)
         except EntryError as e:
             return fail(self, e.message, e.status)
@@ -421,9 +478,15 @@ class Handler(BaseHTTPRequestHandler):
         path = unquote(parsed.path)
         conn = db()
         try:
+            user = writer(self)
+            if not user:
+                return
+            m = re.match(r"^/api/images/(\d+)$", path)
+            if m:
+                return ok(self, image_entry.delete_image(conn, int(m.group(1)), user))
             m = re.match(r"^/api/entry/([a-z_]+)/(\d+)$", path)
             if m:
-                return ok(self, entry_delete(conn, m.group(1), int(m.group(2))))
+                return ok(self, entry_delete(conn, m.group(1), int(m.group(2)), actor=user))
             return fail(self, "not found", 404)
         except EntryError as e:
             return fail(self, e.message, e.status)
@@ -443,20 +506,40 @@ class Handler(BaseHTTPRequestHandler):
             return fail(self, "invalid json: %s" % e, 400)
         conn = db()
         try:
+            if path == "/api/auth/login":
+                token, user = auth.login(conn, str(body.get("account", "")).strip(), str(body.get("password", "")))
+                if not token:
+                    return fail(self, "账号或密码不正确", 401)
+                audit.log(conn, user, "登录", "系统", {})
+                conn.commit()
+                return ok(self, {"user": user}, cookie=token)
+            if path == "/api/auth/logout":
+                auth.logout(auth.token_from_handler(self))
+                return ok(self, {"ok": True}, clear_cookie=True)
+            user = writer(self)
+            if not user:
+                return
+            if path == "/api/images/upload":
+                data = image_entry.create_image(conn, body, user)
+                return ok(self, data, 201)
             m = re.match(r"^/api/images/(\d+)/annotations$", path)
             if m:
-                data = post_annotation(conn, int(m.group(1)), body)
+                data = post_annotation(conn, int(m.group(1)), body, user)
                 return ok(self, data) if data else fail(self, "image not found", 404)
             if path == "/api/inventory/txn":
-                data = post_txn(conn, body)
+                data = post_txn(conn, body, user)
                 return ok(self, data) if data else fail(self, "section not found", 404)
             m = re.match(r"^/api/entry/import/([a-z_]+)$", path)
             if m:
-                data = entry_import(conn, m.group(1), body.get("filename", ""), body.get("data", ""))
+                data = entry_import(conn, m.group(1), body.get("filename", ""), body.get("data", ""),
+                             actor=user, dry_run=bool(body.get("dry_run")))
                 return ok(self, data)
+            m = re.match(r"^/api/entry/restore/([a-z_]+)/(\d+)$", path)
+            if m:
+                return ok(self, entry_restore(conn, m.group(1), int(m.group(2)), actor=user))
             m = re.match(r"^/api/entry/([a-z_]+)$", path)
             if m:
-                data = entry_create(conn, m.group(1), body)
+                data = entry_create(conn, m.group(1), body, actor=user)
                 return ok(self, data, 201)
             return fail(self, "not found", 404)
         except EntryError as e:

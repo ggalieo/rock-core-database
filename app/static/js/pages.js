@@ -337,6 +337,9 @@ export async function well(id) {
   const runs = d.runs || [];
   const totalRuns = runs.length;
   const totalCore = runs.reduce((s, r) => s + (r.core_length || 0), 0);
+  const core = d.core || {};
+  const coreCount = ["observations", "fractures", "vugs", "sidewalls", "samples", "plans"]
+    .reduce((n, k) => n + ((core[k] || []).length), 0);
 
   el.innerHTML = `
     <div class="section-head" style="margin-bottom:12px">
@@ -367,6 +370,7 @@ export async function well(id) {
           <button data-tab="ledger">取心记录 <em>${runs.length}</em></button>
           <button data-tab="images">岩心影像 <em>${d.images.length}</em></button>
           <button data-tab="exp">实验分析 <em>${d.experiments.length}</em></button>
+          <button data-tab="core">岩心数据 <em>${coreCount}</em></button>
           <button data-tab="stock">库存 <em>${d.inventory.length}</em></button>
         </div>
         <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e8eff5;font-size:10px;color:#7b8fa3;line-height:1.8">
@@ -381,6 +385,7 @@ export async function well(id) {
         <div class="tab-panel" id="tab-ledger"></div>
         <div class="tab-panel" id="tab-images"></div>
         <div class="tab-panel" id="tab-exp"></div>
+        <div class="tab-panel" id="tab-core"></div>
         <div class="tab-panel" id="tab-stock"></div>
       </div>
     </div>`;
@@ -436,6 +441,51 @@ export async function well(id) {
       </tr>`).join("")}</tbody>
     </table></div></section>` : empty("暂无实验数据");
 
+  const tbl = (title, rows, head, cells, entity) => `
+    <section class="panel" style="margin-bottom:12px">
+      <div class="panel-hd"><span class="bar"></span><h3>${title}</h3><span class="hd-sub">${rows.length} 条</span></div>
+      ${rows.length ? `<div class="table-wrap"><table class="grid">
+        <thead><tr>${head}<th>操作</th></tr></thead>
+        <tbody>${rows.map((x) => `<tr>${cells(x)}<td><a class="btn small ghost" href="#/entry?entity=${entity}&id=${x.id}">编辑</a></td></tr>`).join("")}</tbody>
+      </table></div>` : empty("暂无记录")}
+    </section>`;
+
+  document.getElementById("tab-core").innerHTML = `
+    <div class="entry-import-msg" style="margin-bottom:12px">
+      岩心观察、裂缝、孔洞、井壁取心、样品和取心设计；点“编辑”进入统一录入页。
+      2017 岩心 13 项已覆盖：观察 ${ (core.observations || []).length } 段。
+    </div>
+    ${tbl("岩心观察（2017 13 项）", core.observations || [],
+      "<th>段号</th><th>井段(m)</th><th>收获率</th><th>岩性</th><th>结构</th><th>构造</th><th>接触</th><th>化石</th><th>倾角</th><th>荧光</th><th>含油</th><th>含气</th><th>破碎/磨损</th>",
+      (x) => `<td>${esc(x.section_no)}</td><td class="num">${fmt(x.top_md,2)}—${fmt(x.bottom_md,2)}</td>
+        <td class="num">${x.recovery == null ? "—" : (x.recovery * 100).toFixed(1) + "%"}</td><td>${esc(x.lithology)}</td>
+        <td>${esc(x.structure_code)}</td><td>${esc(x.sedimentary_structure_code)}</td>
+        <td>${esc(x.contact_relation_code)}</td><td title="${esc(x.fossil_desc)}">${esc((x.fossil_desc || "—").slice(0, 14))}</td>
+        <td class="num">${fmt(x.dip_angle,1)}</td><td>${esc(x.fluorescence)}</td><td>${esc(x.oil_show)}</td>
+        <td>${esc(x.gas_show_code)}</td><td>${esc(x.breakage_wear_code)}</td>`, "observation")}
+    ${tbl("裂缝", core.fractures || [],
+      "<th>段号</th><th>编号</th><th>类型</th><th>倾角</th><th>走向</th><th>长度(mm)</th><th>宽度(mm)</th><th>充填</th>",
+      (x) => `<td>${esc(x.section_no)}</td><td>${esc(x.fracture_no)}</td><td>${esc(x.type_code)}</td>
+        <td class="num">${fmt(x.dip_angle,1)}</td><td class="num">${fmt(x.strike_angle,1)}</td>
+        <td class="num">${fmt(x.length_mm,1)}</td><td class="num">${fmt(x.width_mm,2)}</td><td>${esc(x.fill_code)}</td>`, "fracture")}
+    ${tbl("孔洞", core.vugs || [],
+      "<th>段号</th><th>编号</th><th>类型</th><th>尺寸(mm)</th><th>面积(mm²)</th><th>面孔率%</th><th>充填</th>",
+      (x) => `<td>${esc(x.section_no)}</td><td>${esc(x.vug_no)}</td><td>${esc(x.type_code)}</td>
+        <td class="num">${fmt(x.size_mm,2)}</td><td class="num">${fmt(x.area_mm2,2)}</td>
+        <td class="num">${fmt(x.area_pct,2)}</td><td>${esc(x.fill_code)}</td>`, "vug")}
+    ${tbl("井壁取心", core.sidewalls || [],
+      "<th>样品号</th><th>深度(m)</th><th>岩性</th><th>含油</th><th>荧光</th><th>分析摘要</th>",
+      (x) => `<td>${esc(x.sample_no)}</td><td class="num">${fmt(x.depth_md,2)}</td><td>${esc(x.lithology)}</td>
+        <td>${esc(x.oil_show)}</td><td>${esc(x.fluorescence)}</td><td class="left">${esc(x.analysis_summary)}</td>`, "sidewall")}
+    ${tbl("样品", core.samples || [],
+      "<th>样品号</th><th>段号</th><th>类型</th><th>顶深</th><th>底深</th><th>状态</th>",
+      (x) => `<td>${esc(x.sample_no)}</td><td>${esc(x.section_no)}</td><td>${esc(x.sample_type)}</td>
+        <td class="num">${fmt(x.top_md,2)}</td><td class="num">${fmt(x.bottom_md,2)}</td><td>${esc(x.status)}</td>`, "sample")}
+    ${tbl("取心设计", core.plans || [],
+      "<th>回次</th><th>设计顶深</th><th>设计底深</th><th>设计进尺</th><th>设计心长</th><th>审批</th>",
+      (x) => `<td>第${x.run_no}筒</td><td class="num">${fmt(x.design_top_md,2)}</td><td class="num">${fmt(x.design_bottom_md,2)}</td>
+        <td class="num">${fmt(x.design_footage,2)}</td><td class="num">${fmt(x.design_core_length,2)}</td><td>${esc(x.approved_by)}</td>`, "coring_plan")}`;
+
   document.getElementById("tab-stock").innerHTML = d.inventory.length ? `
     <section class="panel"><div class="table-wrap"><table class="grid">
       <thead><tr><th>段号</th><th>井段(m)</th><th>库位</th><th>数量</th><th>单位</th><th>状态</th><th>更新时间</th></tr></thead>
@@ -469,6 +519,11 @@ export async function well(id) {
   document.getElementById("printCol").addEventListener("click", () => window.print());
 
   renderColumnTab(0);
+  const initialTab = qsFromHash().params.get("tab");
+  if (initialTab) {
+    const btn = document.querySelector(`#dossierNav button[data-tab="${initialTab}"]`);
+    if (btn) btn.click();
+  }
 
   function imageTypeName(t) {
     return { SURFACE: "外表皮", ROLLED: "展开图", FLUORESCENCE: "荧光", BOX: "岩心箱", THIN_SECTION: "薄片" }[t] || t;
@@ -772,16 +827,93 @@ export async function stats() {
   donutChart(document.getElementById("stInv"), d.inv.map((x) => [x.status, x.c]), { centerLabel: "段" });
 }
 
+// ============================================================ auth
+export async function login() {
+  const el = root();
+  const { params } = qsFromHash();
+  const next = (params.get("next") || "#/entry").startsWith("#/") ? (params.get("next") || "#/entry") : "#/entry";
+  const me = await api("/api/auth/me").catch(() => ({ user: null }));
+  if (me.user) {
+    el.innerHTML = `<div class="login-wrap"><div class="login-card">
+      <div class="login-kicker">SIGNED IN</div>
+      <h2>${esc(me.user.name)}</h2>
+      <p>${esc(me.user.account)} · ${esc(me.user.role_key === "admin" ? "管理员" : me.user.role_key === "editor" ? "录入/编辑" : "只读")}</p>
+      <div class="entry-actions"><a class="btn" href="${esc(next)}">继续</a><a class="btn ghost" href="#/logout">退出登录</a></div>
+    </div></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="login-wrap"><div class="login-card">
+    <div class="login-kicker">CORE LAB / SIGN IN</div>
+    <h2>登录岩心平台</h2>
+    <p>写入、编辑、删除和 Excel 导入需要登录。只读浏览可继续使用。</p>
+    <form id="loginForm" novalidate>
+      <div class="form-row"><label>账号</label><input class="input" id="loginAccount" autocomplete="username" placeholder="admin"></div>
+      <div class="form-row"><label>密码</label><input class="input" id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••"></div>
+      <div class="entry-actions"><button class="btn" type="submit" id="loginBtn">登录</button><a class="btn ghost" href="#/home">返回总览</a></div>
+      <div class="entry-msg err" id="loginMsg"></div>
+    </form>
+    <div class="login-demo">演示账号：admin / admin123（管理员）· zhangwei / editor123（录入）· chenjing / viewer123（只读）</div>
+  </div></div>`;
+  const form = document.getElementById("loginForm");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const msg = document.getElementById("loginMsg");
+    const btn = document.getElementById("loginBtn");
+    msg.textContent = ""; btn.disabled = true; btn.textContent = "登录中…";
+    try {
+      const r = await api("/api/auth/login", { method: "POST", body: JSON.stringify({
+        account: document.getElementById("loginAccount").value.trim(),
+        password: document.getElementById("loginPassword").value,
+      }) });
+      toast(`欢迎，${r.user.name}`, "ok");
+      if (window.coreDemo && window.coreDemo.refreshMe) await window.coreDemo.refreshMe();
+      location.hash = next;
+    } catch (err) {
+      msg.textContent = err.message || "登录失败";
+    } finally {
+      btn.disabled = false; btn.textContent = "登录";
+    }
+  });
+}
+
+export async function logout() {
+  try { await api("/api/auth/logout", { method: "POST", body: "{}" }); } catch (e) {}
+  if (window.coreDemo && window.coreDemo.refreshMe) await window.coreDemo.refreshMe();
+  toast("已退出登录", "ok");
+  location.hash = "#/home";
+}
+
 // ============================================================ entry
 export async function entry() {
   const el = root();
   el.innerHTML = loading("正在加载录入表单");
+  const me = await api("/api/auth/me").catch(() => ({ user: null }));
+  if (!me.user) {
+    el.innerHTML = `<div class="login-wrap"><div class="login-card">
+      <div class="login-kicker">SIGN IN REQUIRED</div>
+      <h2>录入需要登录</h2>
+      <p>数据写入、编辑、删除和 Excel 导入需要录入员或管理员权限。只读账号可以浏览井档案和影像。</p>
+      <div class="entry-actions"><a class="btn" href="#/login?next=%23%2Fentry">去登录</a><a class="btn ghost" href="#/home">返回总览</a></div>
+    </div></div>`;
+    return;
+  }
+  if (me.user.role_key === "viewer") {
+    el.innerHTML = `<div class="login-wrap"><div class="login-card">
+      <div class="login-kicker">READ ONLY</div>
+      <h2>只读账号</h2>
+      <p>${esc(me.user.name)} 当前是只读角色，不能新增或修改数据。请使用录入员/管理员账号。</p>
+      <div class="entry-actions"><a class="btn" href="#/logout">切换账号</a><a class="btn ghost" href="#/wells">返回井档案</a></div>
+    </div></div>`;
+    return;
+  }
   const meta = await api("/api/entry/meta");
   const entities = meta.entities || [];
   if (!entities.length) { el.innerHTML = empty("没有可录入的数据对象"); return; }
-  const wanted = qsFromHash().params.get("entity");
+  const params = qsFromHash().params;
+  const wanted = params.get("entity");
+  const editId = parseInt(params.get("id") || "0", 10) || 0;
   let current = entities.some((x) => x.key === wanted) ? wanted : entities[0].key;
-  const state = { editingId: null, importResult: null };
+  const state = { editingId: null, importResult: null, trash: false };
 
   const optList = (f) => {
     const o = f.options;
@@ -835,7 +967,8 @@ export async function entry() {
     const ent = entities.find((x) => x.key === key);
     box.innerHTML = `<div class="entry-manager-head"><h4>数据管理 · ${esc(ent?.label || "")}</h4><span>加载中…</span></div>`;
     try {
-      const d = await api(`/api/entry/list?entity=${encodeURIComponent(key)}`);
+      const isImage = key === "image";
+      const d = await api(`/api/entry/list?entity=${encodeURIComponent(key)}${state.trash ? "&deleted=1" : ""}`);
       const rows = d.items || [];
       const head = (d.fields || []).map((f) => `<th>${esc(f.label)}</th>`).join("");
       const body = rows.length ? rows.map((r) => `<tr>
@@ -846,8 +979,7 @@ export async function entry() {
           return `<td title="${esc(text)}">${esc(text.length > 36 ? text.slice(0, 36) + "…" : text)}</td>`;
         }).join("")}
         <td class="entry-actions-cell">
-          <button class="entry-act" data-edit="${r.id}">编辑</button>
-          <button class="entry-act danger" data-del="${r.id}">删除</button>
+          ${d.deleted ? `<button class="entry-act" data-restore="${r.id}">恢复</button>` : `${isImage ? "" : `<button class="entry-act" data-edit="${r.id}">编辑</button>`}<button class="entry-act danger" data-del="${r.id}">删除</button>`}
         </td>
       </tr>`).join("") : `<tr><td colspan="${(d.fields || []).length + 1}" class="empty">暂无记录</td></tr>`;
 
@@ -858,8 +990,8 @@ export async function entry() {
           resultHtml = `<div class="entry-import-msg err">${esc(r.error)}</div>`;
         } else {
           resultHtml = `<div class="entry-import-msg ${r.failed ? "warn" : "ok"}">
-            导入 ${esc(r.label || "")}：共 ${r.total} 行，成功 ${r.created} 行，失败 ${r.failed} 行。
-            ${r.errors && r.errors.length ? `<details><summary>查看错误</summary><ul>${r.errors.map((e) => `<li>第 ${e.row} 行：${esc(e.error)}</li>`).join("")}</ul></details>` : ""}
+            ${r.dry_run ? "预检查" : "导入"} ${esc(r.label || "")}：共 ${r.total} 行，${r.dry_run ? "通过" : "成功"} ${r.created} 行，失败 ${r.failed} 行。
+            ${r.errors && r.errors.length ? `<details><summary>查看错误</summary><ul>${r.errors.map((e) => `<li>第 ${e.row} 行：${esc(e.error)}</li>`).join("")}</ul></details><button class="entry-act" id="entryErrCsv">下载错误 CSV</button>` : ""}
           </div>`;
         }
       }
@@ -868,8 +1000,10 @@ export async function entry() {
         <div class="entry-manager-head">
           <h4>数据管理 · ${esc(d.label)} <span>共 ${d.total} 条，显示最近 ${rows.length} 条</span></h4>
           <div class="entry-manager-actions">
-            <a class="btn ghost" href="/api/entry/template?entity=${encodeURIComponent(key)}">下载 Excel 模板</a>
-            <label class="btn ghost entry-file">导入 Excel<input type="file" id="entryFile" accept=".xlsx,.xlsm"></label>
+            <button class="btn ghost" id="entryTrash">${state.trash ? "返回正常列表" : "回收站"}</button>
+            ${isImage ? "" : `<a class="btn ghost" href="/api/entry/template?entity=${encodeURIComponent(key)}">下载 Excel 模板</a>
+            <label class="btn ghost entry-file">预检查<input type="file" id="entryDryRun" accept=".xlsx,.xlsm"></label>
+            <label class="btn ghost entry-file">导入 Excel<input type="file" id="entryFile" accept=".xlsx,.xlsm"></label>`}
           </div>
         </div>
         ${resultHtml}
@@ -877,9 +1011,24 @@ export async function entry() {
           <thead><tr>${head}<th>操作</th></tr></thead>
           <tbody>${body}</tbody>
         </table></div>`;
-      const file = document.getElementById("entryFile");
-      if (file) file.addEventListener("change", async () => {
-        const f = file.files && file.files[0];
+      const errCsv = document.getElementById("entryErrCsv");
+      if (errCsv && state.importResult && state.importResult.errors) {
+        errCsv.addEventListener("click", () => {
+          const lines = ["行号,错误原因", ...state.importResult.errors.map((e) => `${e.row},"${String(e.error).replace(/"/g, '""')}"`)];
+          const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `import_errors_${key}.csv`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        });
+      }
+      const trash = document.getElementById("entryTrash");
+      if (trash) trash.addEventListener("click", async () => {
+        state.trash = !state.trash;
+        await renderManager(key);
+      });
+      const sendImport = async (f, dryRun) => {
         if (!f) return;
         if (f.size > 8 * 1024 * 1024) { state.importResult = { error: "文件超过 8 MB" }; await renderManager(key); return; }
         try {
@@ -890,18 +1039,22 @@ export async function entry() {
             reader.readAsDataURL(f);
           });
           const r = await api(`/api/entry/import/${encodeURIComponent(key)}`, {
-            method: "POST", body: JSON.stringify({ filename: f.name, data }),
+            method: "POST", body: JSON.stringify({ filename: f.name, data, dry_run: dryRun }),
           });
           state.importResult = r;
-          toast(`导入完成：成功 ${r.created} 行`, r.failed ? "error" : "ok");
-          await refreshMeta();
+          toast(dryRun ? `预检查完成：${r.created} 行通过` : `导入完成：成功 ${r.created} 行`, r.failed ? "error" : "ok");
+          if (!dryRun) await refreshMeta();
           await renderManager(key);
         } catch (err) {
           state.importResult = { error: err.message || String(err) };
           toast(state.importResult.error, "error");
           await renderManager(key);
         }
-      });
+      };
+      const file = document.getElementById("entryFile");
+      if (file) file.addEventListener("change", () => sendImport(file.files && file.files[0], false));
+      const dry = document.getElementById("entryDryRun");
+      if (dry) dry.addEventListener("change", () => sendImport(dry.files && dry.files[0], true));
       box.querySelectorAll("[data-edit]").forEach((btn) => btn.addEventListener("click", async () => {
         try {
           const d = await api(`/api/entry/${encodeURIComponent(key)}/${btn.dataset.edit}`);
@@ -923,7 +1076,67 @@ export async function entry() {
     }
   };
 
+  const renderImageForm = (ent) => {
+    current = "image";
+    state.editingId = null;
+    document.querySelectorAll(".entry-tab").forEach((b) => b.classList.toggle("active", b.dataset.key === "image"));
+    const formBox = document.getElementById("entryFormBox");
+    formBox.innerHTML = `
+      <div class="entry-head"><h2>${esc(ent.icon)} ${esc(ent.label)}</h2><p>${esc(ent.desc || "")}</p></div>
+      <form id="entryForm" novalidate>
+        <div class="entry-grid">${(ent.fields || []).map(control).join("")}</div>
+        <div class="entry-field wide"><label>影像文件<span class="req">*</span></label><input class="input" type="file" id="imageFile" accept="image/jpeg,image/png,image/webp"><span class="hint">JPG / PNG / WebP，最大 12 MB；自动生成缩略图，配置 MinIO 时同步上传。</span></div>
+        <div class="entry-actions">
+          <button class="btn" type="submit" id="entrySave">上传影像</button>
+          <button class="btn ghost" type="reset">清空</button>
+          <span class="hint">上传后可在岩心影像中查看</span>
+        </div>
+        <div class="entry-msg" id="entryMsg"></div>
+      </form>
+      <div class="entry-manager" id="entryManager"></div>`;
+    const form = document.getElementById("entryForm");
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const msg = document.getElementById("entryMsg");
+      const btn = document.getElementById("entrySave");
+      const f = document.getElementById("imageFile").files[0];
+      if (!f) { msg.className = "entry-msg err"; msg.textContent = "请选择影像文件"; return; }
+      if (f.size > 12 * 1024 * 1024) { msg.className = "entry-msg err"; msg.textContent = "影像超过 12 MB"; return; }
+      const data = {};
+      for (const field of ent.fields || []) {
+        const node = form.elements[field.name];
+        if (node) data[field.name] = node.value.trim();
+      }
+      btn.disabled = true; btn.textContent = "上传中…"; msg.textContent = "";
+      try {
+        const dataUrl = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = reject;
+          r.readAsDataURL(f);
+        });
+        const res = await api("/api/images/upload", { method: "POST", body: JSON.stringify({ ...data, file_data: dataUrl, filename: f.name }) });
+        toast(`影像已上传 #${res.id}`, "ok");
+        msg.className = "entry-msg ok";
+        msg.textContent = `已上传影像 #${res.id}`;
+        form.reset();
+        await renderManager("image");
+      } catch (err) {
+        msg.className = "entry-msg err";
+        msg.textContent = err.message || String(err);
+        toast(err.message || "上传失败", "error");
+      } finally {
+        btn.disabled = false; btn.textContent = "上传影像";
+      }
+    });
+    renderManager("image");
+  };
+
   const renderForm = (key, record = null) => {
+    if (key === "image") {
+      renderImageForm(entities.find((x) => x.key === "image") || { label: "影像", icon: "▧", fields: [] });
+      return;
+    }
     current = key;
     state.editingId = record ? record.id : null;
     const ent = entities.find((x) => x.key === key) || entities[0];
@@ -1000,9 +1213,20 @@ export async function entry() {
     </div>`;
   document.querySelectorAll(".entry-tab").forEach((b) => b.addEventListener("click", () => {
     state.importResult = null;
+    state.trash = false;
     renderForm(b.dataset.key);
   }));
-  renderForm(current);
+  if (editId) {
+    try {
+      const d = await api(`/api/entry/${encodeURIComponent(current)}/${editId}`);
+      renderForm(current, d.record);
+    } catch (e) {
+      toast(e.message || "记录不存在", "error");
+      renderForm(current);
+    }
+  } else {
+    renderForm(current);
+  }
 }
 // ============================================================ admin
 export async function admin() {

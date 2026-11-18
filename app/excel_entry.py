@@ -48,9 +48,17 @@ def template(conn, entity):
 
     guide = wb.create_sheet("填写说明")
     guide.append(["字段", "名称", "必填", "类型", "填写提示"])
+    ref_hint = {
+        "well_id": "可填井 ID 或井号（如 BD16）",
+        "run_id": "可填回次 ID，或“井号/回次号”（如 BD16/1）",
+        "section_id": "可填段 ID，或“井号/回次号/段号”（如 BD16/1/1-01）",
+        "sample_id": "可填样品 ID 或样品号",
+        "sidewall_id": "可填井壁取心 ID 或样品号",
+    }
     for f in spec["fields"]:
+        hint = ref_hint.get(f["name"], f.get("placeholder", ""))
         guide.append([f["name"], f["label"], "是" if f.get("required") else "否",
-                      f.get("type", "text"), f.get("placeholder", "")])
+                      f.get("type", "text"), hint])
     for i, w in enumerate([20, 18, 8, 12, 34], 1):
         guide.column_dimensions[get_column_letter(i)].width = w
     for c in guide[1]:
@@ -79,7 +87,7 @@ def template(conn, entity):
     return buf.getvalue()
 
 
-def import_rows(conn, entity, filename, data_b64):
+def import_rows(conn, entity, filename, data_b64, actor="system", dry_run=False):
     spec = ENTITIES.get(entity)
     if not spec:
         raise EntryError("未知录入对象", 404)
@@ -131,13 +139,15 @@ def import_rows(conn, entity, filename, data_b64):
         if all(v is None or str(v).strip() == "" for v in body.values()):
             continue
         try:
-            r = create(conn, entity, body)
+            r = create(conn, entity, body, actor=actor, dry_run=dry_run)
             created += 1
-            ids.append(r.get("id"))
+            if r.get("id") is not None:
+                ids.append(r.get("id"))
         except EntryError as e:
             errors.append({"row": row_no, "error": e.message})
         except Exception as e:
             errors.append({"row": row_no, "error": str(e)[:200]})
     wb.close()
     return {"entity": entity, "label": spec["label"], "total": total,
-            "created": created, "failed": len(errors), "ids": ids, "errors": errors[:50]}
+            "created": created, "failed": len(errors), "ids": ids, "errors": errors[:50],
+            "dry_run": bool(dry_run)}

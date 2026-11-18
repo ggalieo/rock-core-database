@@ -572,6 +572,8 @@ def main():
     conn.close()
     from migrate_core_gap import main as build_core_gap
     build_core_gap()
+    from migrate_p0 import main as build_p0
+    build_p0()
 
 
 if __name__ == "__main__":

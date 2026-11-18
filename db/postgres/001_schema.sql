@@ -40,6 +40,7 @@ CREATE TABLE wells (
   status      text,
   operator    text,
   updated_at  timestamptz DEFAULT now()
+  ,deleted_at timestamptz
 );
 CREATE INDEX idx_wells_region ON wells(region);
 CREATE INDEX idx_wells_tectonic ON wells(tectonic);
@@ -67,6 +68,7 @@ CREATE TABLE runs (
   description text,
   drilled_at  timestamptz,
   UNIQUE (well_id, run_no)
+  ,deleted_at timestamptz
 );
 CREATE INDEX idx_runs_well ON runs(well_id);
 
@@ -104,6 +106,7 @@ CREATE TABLE sections (
   strip_file  text,
   strip_key   text,
   UNIQUE (run_id, section_no)
+  ,deleted_at timestamptz
 );
 CREATE INDEX idx_sections_well ON sections(well_id);
 CREATE INDEX idx_sections_run ON sections(run_id);
@@ -147,6 +150,7 @@ CREATE TABLE images (
   device       text,
   operator     text,
   quality      text
+  ,deleted_at timestamptz
 );
 CREATE INDEX idx_images_well ON images(well_id);
 CREATE INDEX idx_images_run ON images(run_id);
@@ -206,6 +210,7 @@ CREATE TABLE core_observation (
   observer                   text,
   observed_at                timestamptz,
   remark                     text
+  ,deleted_at timestamptz
 );
 CREATE INDEX idx_core_obs_structure ON core_observation(structure_code);
 CREATE INDEX idx_core_obs_sed ON core_observation(sedimentary_structure_code);
@@ -225,6 +230,7 @@ CREATE TABLE core_fracture (
   geometry      jsonb,
   description   text,
   created_at    timestamptz DEFAULT now()
+  ,deleted_at timestamptz
 );
 CREATE INDEX idx_core_frac_section ON core_fracture(section_id);
 
@@ -241,6 +247,7 @@ CREATE TABLE core_vug (
   geometry    jsonb,
   description text,
   created_at  timestamptz DEFAULT now()
+  ,deleted_at timestamptz
 );
 CREATE INDEX idx_core_vug_section ON core_vug(section_id);
 
@@ -257,6 +264,7 @@ CREATE TABLE core_sidewall (
   image_id         integer REFERENCES images(id) ON DELETE SET NULL,
   analysis_summary text,
   collected_at     timestamptz
+  ,deleted_at timestamptz
 );
 CREATE INDEX idx_sidewall_well ON core_sidewall(well_id);
 
@@ -273,6 +281,7 @@ CREATE TABLE samples (
   keeper       text,
   status       text,
   CHECK (NOT (section_id IS NOT NULL AND sidewall_id IS NOT NULL))
+  ,deleted_at timestamptz
 );
 CREATE INDEX idx_samples_section ON samples(section_id);
 CREATE INDEX idx_samples_sidewall ON samples(sidewall_id);
@@ -295,6 +304,7 @@ CREATE TABLE experiments (
   detection_limit text,
   quality         text,
   test_date       timestamptz
+  ,deleted_at timestamptz
 );
 CREATE INDEX idx_exp_well ON experiments(well_id);
 CREATE INDEX idx_exp_sample ON experiments(sample_id);
@@ -318,6 +328,7 @@ CREATE TABLE coring_plan (
   change_reason      text,
   approved_by        text,
   approved_at        timestamptz
+  ,deleted_at timestamptz
 );
 
 -- ------------------------------------------------------------ inventory / txns
@@ -401,6 +412,7 @@ CREATE TABLE users (
   name          text NOT NULL,
   account       text NOT NULL UNIQUE,
   role          text,
+  role_key      text,
   org           text,
   last_login    timestamptz,
   password_hash text,

@@ -162,7 +162,7 @@ export async function wells() {
       </div>
       <div class="sh-actions">
         <button class="btn ghost" id="exportWells">导出清单</button>
-        <button class="btn primary" id="addWell">＋ 登记新井</button>
+        <button class="btn primary" id="addWell" title="统一在数据录入中新增井">＋ 新增井</button>
       </div>
     </div>
     <div class="explorer">
@@ -321,7 +321,9 @@ export async function wells() {
     const t = e.target.closest("[data-id]");
     if (t) go(`#/well/${t.dataset.id}`);
   });
-  document.getElementById("addWell").addEventListener("click", () => toast("初版演示：新增井表单将在下一版接入", "info"));
+  document.getElementById("addWell").addEventListener("click", () => {
+    location.hash = "#/entry?entity=well";
+  });
   document.getElementById("exportWells").addEventListener("click", () => toast("已生成井清单导出任务（演示）", "ok"));
   await load(page);
 }

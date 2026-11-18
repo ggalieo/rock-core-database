@@ -107,13 +107,22 @@ python app/server.py --port 8010
 | GET | `/api/admin` | 用户、字典、日志 |
 | GET | `/api/health` | 健康检查 |
 
-## 重新生成演示数据
+## 重建演示数据
+
+**Windows 推荐双击 `rebuild_db.bat`**：会先备份旧库为 `app/data/core.db.bak`，再重建数据库、影像和 2017 补充数据表。
+
+手动执行：
 
 ```bash
 python app/seed.py
 ```
 
-会删除并重建 `app/data/core.db`、`app/static/assets/core/`，同时清空手工添加的标注与库存流转。
+`seed.py` 现在会同时完成：
+
+- 15 口示范井、21 个取心回次、65 个岩心段、113 张影像、90 项实验、45 条库存、12 条库存流水、2 条演示标注；
+- 2017 补充模型：`core_observation` 65 条、`core_fracture` 21 条、`core_vug` 25 条、`core_sidewall` 24 条、`samples` 15 条、`coring_plan` 21 条、`image_calibration` 65 条、`dictionary` 28 个码。
+
+注意：会删除并重建 `app/data/core.db`、`app/static/assets/core/`，同时清空手工添加的标注与库存流转；需要保留时先复制 `app/data/core.db`。
 
 ## 与正式方案的差距
 

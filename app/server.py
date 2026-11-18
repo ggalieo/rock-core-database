@@ -333,7 +333,7 @@ def api_inventory(conn, qs):
         FROM inventory inv JOIN wells w ON w.id=inv.well_id LEFT JOIN sections s ON s.id=inv.section_id
         WHERE {' AND '.join(where)} AND w.deleted_at IS NULL AND (s.id IS NULL OR s.deleted_at IS NULL)
         ORDER BY inv.id LIMIT 60""", params)
-    summary = rows(conn, "SELECT status, COUNT(*) c, ROUND(CAST(SUM(quantity) AS numeric),2) q FROM inventory inv JOIN wells w ON w.id=inv.well_id WHERE w.deleted_at IS NULL GROUP BY status")
+    summary = rows(conn, "SELECT inv.status, COUNT(*) c, ROUND(CAST(SUM(inv.quantity) AS numeric),2) q FROM inventory inv JOIN wells w ON w.id=inv.well_id WHERE w.deleted_at IS NULL GROUP BY inv.status")
     locations = rows(conn, "SELECT location, COUNT(*) c FROM inventory GROUP BY location ORDER BY c DESC LIMIT 12")
     return {"items": items, "summary": summary, "locations": locations}
 

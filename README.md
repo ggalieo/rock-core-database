@@ -15,7 +15,7 @@
 手动启动：
 
 ```bash
-python app/seed.py          # 首次运行，生成演示数据与影像
+python app/seed.py          # 首次运行，生成演示数据、补充模型与影像
 python app/server.py --port 8010
 ```
 

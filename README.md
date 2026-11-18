@@ -168,3 +168,10 @@ python app/seed.py
 - 新增：`core_observation`、`core_fracture`、`core_vug`、`core_sidewall`、`samples`、`coring_plan`、`image_calibration`、`dictionary`；扩展 `experiments`、`annotations`。
 - 已应用到 `app/data/core.db`，并写入演示补充数据；迁移文件：`app/migrations/001_core_gap.sql`、`app/migrate_core_gap.py`。
 - 文档包含：补充前后覆盖对比、补充后可存储的数据类型、树逻辑图与关系基数、典型 SQL、验收建议。
+
+## GitHub 仓库
+
+<https://github.com/ggalieo/rock-core-database>
+
+- 分支：`main`
+- 后续每次改动提交后，`post-commit` 钩子会自动推送到该远程仓库。

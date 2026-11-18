@@ -2,12 +2,41 @@
 SET client_encoding = 'UTF8';
 BEGIN;
 TRUNCATE TABLE
-  image_embedding, annotations, image_calibration, txns, inventory,
+  well_chart, chart_template, chart_category, image_embedding, annotations, image_calibration, txns, inventory,
   experiment_depth, experiments, samples, core_sidewall, core_vug,
   core_fracture, core_observation, coring_plan, products, scans,
   image_depth, images, section_depth, sections, strata, run_depth,
   runs, well_geometry, wells, dictionary, users, audit, meta
 RESTART IDENTITY CASCADE;
+
+-- chart_category (8)
+INSERT INTO chart_category ("code", "name", "sort_no") VALUES ('BASIC', '基本图', 1);
+INSERT INTO chart_category ("code", "name", "sort_no") VALUES ('BOREHOLE', '钻孔柱状图', 6);
+INSERT INTO chart_category ("code", "name", "sort_no") VALUES ('COMPOSITE', '综合图', 2);
+INSERT INTO chart_category ("code", "name", "sort_no") VALUES ('CUTTINGS', '岩屑综合图', 4);
+INSERT INTO chart_category ("code", "name", "sort_no") VALUES ('DELIVERABLE', '成果', 8);
+INSERT INTO chart_category ("code", "name", "sort_no") VALUES ('FLUOR', '荧光图切', 3);
+INSERT INTO chart_category ("code", "name", "sort_no") VALUES ('LAYER', '岩心层模板', 7);
+INSERT INTO chart_category ("code", "name", "sort_no") VALUES ('MULTI', '多井对比', 5);
+
+-- chart_template (17)
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (1, 'CORE_BASIC', '岩心基本图', 'BASIC', 'V1', '', '交互图', '{}', TRUE, 1, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (2, 'CORE_COMPOSITE', '岩心综合图', 'COMPOSITE', 'V1', '', '交互图', '{}', TRUE, 2, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (3, 'CORE_COMPOSITE', '岩心综合图', 'COMPOSITE', 'V8', '', '交互图', '{}', TRUE, 3, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (4, 'CORE_COMPOSITE', '岩心综合图', 'COMPOSITE', 'V10', '', '交互图', '{}', TRUE, 4, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (5, 'CORE_COMPOSITE', '岩心综合图', 'COMPOSITE', 'V10', '克拉玛依', '交互图', '{}', TRUE, 5, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (6, 'CORE_COMPOSITE', '岩心综合图', 'COMPOSITE', 'V1', '青海', '交互图', '{}', TRUE, 6, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (7, 'CORE_COMPOSITE', '岩心综合图', 'COMPOSITE', 'V10', '冀塔', '交互图', '{}', TRUE, 7, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (8, 'CORE_COMPOSITE', '岩心综合图', 'COMPOSITE', 'V10', '扬州石化', '交互图', '{}', TRUE, 8, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (9, 'CORE_COMPOSITE', '岩心综合图', 'COMPOSITE', 'V1', '中油测井天津', '交互图', '{}', TRUE, 9, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (10, 'FLUORESCENCE', '荧光图切', 'FLUOR', 'V1', '', '交互图', '{}', TRUE, 10, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (11, 'CUTTINGS_COMPOSITE', '岩屑综合图', 'CUTTINGS', 'V1', '', '交互图', '{}', TRUE, 11, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (12, 'MULTI_WELL', '多井对比', 'MULTI', 'V1', '', '交互图', '{}', TRUE, 12, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (13, 'BOREHOLE_COLUMN', '钻孔柱状图', 'BOREHOLE', 'V1', '', '交互图', '{}', TRUE, 13, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (14, 'CORE_LAYER', '岩心层模板', 'LAYER', 'V03', '', '交互图', '{}', TRUE, 14, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (15, 'EXP_RESULT', '实验成果', 'DELIVERABLE', 'V1', '', '文件', '{}', TRUE, 15, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (16, 'IMAGE_RESULT', '影像成果', 'DELIVERABLE', 'V1', '', '文件', '{}', TRUE, 16, '2026-11-18 09:12:28');
+INSERT INTO chart_template ("id", "code", "name", "category_code", "version", "project", "output_type", "config_json", "is_active", "sort_no", "created_at") VALUES (17, 'STOCK_RESULT', '库存成果', 'DELIVERABLE', 'V1', '', '文件', '{}', TRUE, 17, '2026-11-18 09:12:28');
 
 -- dictionary (46)
 INSERT INTO dictionary ("dict_type", "code", "name", "parent_code", "sort_no", "remark") VALUES ('analysis_group', 'DEV_TEST', '开发试验', '', 7, NULL);
@@ -859,11 +888,11 @@ INSERT INTO image_calibration ("id", "image_id", "method", "control_points", "pi
 INSERT INTO image_calibration ("id", "image_id", "method", "control_points", "pixel_per_mm", "residual_px", "residual_mm", "version", "operator", "calibrated_at") VALUES (65, 111, '标尺+两端控制点', '[{"x": 0, "md": 3106.022}, {"x": 960, "md": 3109.0}]', 10.0, 0.2, 0.02, 'v1', '马超', '2026-11-17 18:00:00');
 
 -- users (5)
-INSERT INTO users ("id", "name", "account", "role", "org", "last_login", "password_hash", "role_key", "is_active") VALUES (1, '系统管理员', 'admin', '系统管理员', '信息中心', '2026-11-18 16:55:02', 'pbkdf2_sha256$120000$7ed2bf588f104ccf435dfee735a75c81$24afb926c2defe818eb152cb5960fa7bd5ab04960448b2137b4de80d7426e524', 'admin', 1);
-INSERT INTO users ("id", "name", "account", "role", "org", "last_login", "password_hash", "role_key", "is_active") VALUES (2, '张伟', 'zhangwei', '数据管理员', '岩心库', '2026-11-16 08:32', 'pbkdf2_sha256$120000$78944fc717eefbcae171f7037445d7b4$c1dcb4595b797c4ac466c37360b7d786f01af86add2396827cf046f3a3bbd102', 'editor', 1);
-INSERT INTO users ("id", "name", "account", "role", "org", "last_login", "password_hash", "role_key", "is_active") VALUES (3, '李娜', 'lina', '地质人员', '勘探开发研究院', '2026-11-15 17:20', 'pbkdf2_sha256$120000$76ec4eca0432769f14bfdcc1a4fe3e6d$76167639d013bc4dad6256ce2875371607a4c4d01b92e50d89749564d301873c', 'editor', 1);
-INSERT INTO users ("id", "name", "account", "role", "org", "last_login", "password_hash", "role_key", "is_active") VALUES (4, '王强', 'wangqiang', '录入员', '岩心库', '2026-11-15 16:05', 'pbkdf2_sha256$120000$4e323f09522adfa697a22374cc9f3c8a$4adae0e12e6663ae9dbe65a6c94b2729502a659c255ac17e54dfe5649a30e10d', 'editor', 1);
-INSERT INTO users ("id", "name", "account", "role", "org", "last_login", "password_hash", "role_key", "is_active") VALUES (5, '陈静', 'chenjing', '借阅者', '勘探开发研究院', '2026-11-18 16:50:06', 'pbkdf2_sha256$120000$2f5b9183e672a6aa04266295b8ac5820$7c87f41c76b5bb4945ed744e2b5b912a9bc615d610adffcf738d93276bfb8028', 'viewer', 1);
+INSERT INTO users ("id", "name", "account", "role", "org", "last_login", "password_hash", "role_key", "is_active") VALUES (1, '系统管理员', 'admin', '系统管理员', '信息中心', '2026-11-18 17:14:07', 'pbkdf2_sha256$120000$7ed2bf588f104ccf435dfee735a75c81$24afb926c2defe818eb152cb5960fa7bd5ab04960448b2137b4de80d7426e524', 'admin', TRUE);
+INSERT INTO users ("id", "name", "account", "role", "org", "last_login", "password_hash", "role_key", "is_active") VALUES (2, '张伟', 'zhangwei', '数据管理员', '岩心库', '2026-11-16 08:32', 'pbkdf2_sha256$120000$78944fc717eefbcae171f7037445d7b4$c1dcb4595b797c4ac466c37360b7d786f01af86add2396827cf046f3a3bbd102', 'editor', TRUE);
+INSERT INTO users ("id", "name", "account", "role", "org", "last_login", "password_hash", "role_key", "is_active") VALUES (3, '李娜', 'lina', '地质人员', '勘探开发研究院', '2026-11-15 17:20', 'pbkdf2_sha256$120000$76ec4eca0432769f14bfdcc1a4fe3e6d$76167639d013bc4dad6256ce2875371607a4c4d01b92e50d89749564d301873c', 'editor', TRUE);
+INSERT INTO users ("id", "name", "account", "role", "org", "last_login", "password_hash", "role_key", "is_active") VALUES (4, '王强', 'wangqiang', '录入员', '岩心库', '2026-11-15 16:05', 'pbkdf2_sha256$120000$4e323f09522adfa697a22374cc9f3c8a$4adae0e12e6663ae9dbe65a6c94b2729502a659c255ac17e54dfe5649a30e10d', 'editor', TRUE);
+INSERT INTO users ("id", "name", "account", "role", "org", "last_login", "password_hash", "role_key", "is_active") VALUES (5, '陈静', 'chenjing', '借阅者', '勘探开发研究院', '2026-11-18 16:50:06', 'pbkdf2_sha256$120000$2f5b9183e672a6aa04266295b8ac5820$7c87f41c76b5bb4945ed744e2b5b912a9bc615d610adffcf738d93276bfb8028', 'viewer', TRUE);
 
 -- meta (11)
 INSERT INTO meta ("key", "value") VALUES ('coverage', '78.0');
@@ -877,6 +906,98 @@ INSERT INTO meta ("key", "value") VALUES ('sidewall_pcs', '96');
 INSERT INTO meta ("key", "value") VALUES ('today_scans', '6');
 INSERT INTO meta ("key", "value") VALUES ('total_wells', '386');
 INSERT INTO meta ("key", "value") VALUES ('updated_at', '2026-11-16 08:45');
+
+-- well_chart (90)
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (1, 1, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (2, 1, 12, '未生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (3, 1, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (4, 1, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (5, 1, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (6, 1, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (7, 2, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (8, 2, 12, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (9, 2, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (10, 2, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (11, 2, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (12, 2, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (13, 3, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (14, 3, 12, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (15, 3, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (16, 3, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (17, 3, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (18, 3, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (19, 4, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (20, 4, 12, '未生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (21, 4, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (22, 4, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (23, 4, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (24, 4, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (25, 5, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (26, 5, 12, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (27, 5, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (28, 5, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (29, 5, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (30, 5, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (31, 6, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (32, 6, 12, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (33, 6, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (34, 6, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (35, 6, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (36, 6, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (37, 7, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (38, 7, 12, '未生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (39, 7, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (40, 7, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (41, 7, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (42, 7, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (43, 8, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (44, 8, 12, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (45, 8, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (46, 8, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (47, 8, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (48, 8, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (49, 9, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (50, 9, 12, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (51, 9, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (52, 9, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (53, 9, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (54, 9, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (55, 10, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (56, 10, 12, '未生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (57, 10, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (58, 10, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (59, 10, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (60, 10, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (61, 11, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (62, 11, 12, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (63, 11, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (64, 11, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (65, 11, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (66, 11, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (67, 12, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (68, 12, 12, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (69, 12, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (70, 12, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (71, 12, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (72, 12, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (73, 13, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (74, 13, 12, '未生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (75, 13, 16, '未生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (76, 13, 10, '未生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (77, 13, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (78, 13, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (79, 14, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (80, 14, 12, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (81, 14, 16, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (82, 14, 10, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (83, 14, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (84, 14, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (85, 15, 2, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (86, 15, 12, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (87, 15, 16, '未生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (88, 15, 10, '未生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (89, 15, 15, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
+INSERT INTO well_chart ("id", "well_id", "template_id", "status", "file_url", "image_url", "generated_at", "generated_by", "error_msg") VALUES (90, 15, 17, '已生成', NULL, NULL, '2026-11-18 09:12:28', 'system', NULL);
 
 -- audit (5)
 INSERT INTO audit ("id", "user_name", "action", "target", "created_at") VALUES (1, '张伟', '导入影像', 'BD16 / 第1筒', '2026-11-15 10:12');
@@ -921,6 +1042,8 @@ INSERT INTO experiment_depth (experiment_id, depth)
 SELECT id, numrange(top_md, bottom_md, '[)')
 FROM experiments
 WHERE top_md IS NOT NULL AND bottom_md IS NOT NULL AND top_md < bottom_md;
+SELECT setval(pg_get_serial_sequence('chart_template', 'id'), COALESCE((SELECT max(id) FROM chart_template), 1), true);
+SELECT setval(pg_get_serial_sequence('well_chart', 'id'), COALESCE((SELECT max(id) FROM well_chart), 1), true);
 SELECT setval(pg_get_serial_sequence('wells', 'id'), COALESCE((SELECT max(id) FROM wells), 1), true);
 SELECT setval(pg_get_serial_sequence('runs', 'id'), COALESCE((SELECT max(id) FROM runs), 1), true);
 SELECT setval(pg_get_serial_sequence('strata', 'id'), COALESCE((SELECT max(id) FROM strata), 1), true);

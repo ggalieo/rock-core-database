@@ -346,6 +346,8 @@ export async function well(id) {
   const el = root();
   el.innerHTML = loading("正在加载单井数据");
   const d = await api(`/api/wells/${id}`);
+  const me = await api("/api/auth/me").catch(() => ({ user: null }));
+  const canWrite = !!(me.user && ["admin", "editor"].includes(me.user.role_key));
   const w = d.well;
   const runs = d.runs || [];
   const totalRuns = runs.length;
@@ -353,6 +355,8 @@ export async function well(id) {
   const core = d.core || {};
   const coreCount = ["observations", "fractures", "vugs", "sidewalls", "samples", "plans"]
     .reduce((n, k) => n + ((core[k] || []).length), 0);
+  const charts = d.charts || [];
+  const chartDone = charts.filter((x) => x.status === "已生成").length;
 
   el.innerHTML = `
     <div class="section-head" style="margin-bottom:12px">
@@ -384,6 +388,7 @@ export async function well(id) {
           <button data-tab="images">岩心影像 <em>${d.images.length}</em></button>
           <button data-tab="exp">实验分析 <em>${d.experiments.length}</em></button>
           <button data-tab="core">岩心数据 <em>${coreCount}</em></button>
+          <button data-tab="charts">图件成果 <em>${chartDone}/${charts.length}</em></button>
           <button data-tab="stock">库存 <em>${d.inventory.length}</em></button>
         </div>
         <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e8eff5;font-size:10px;color:#7b8fa3;line-height:1.8">
@@ -399,6 +404,7 @@ export async function well(id) {
         <div class="tab-panel" id="tab-images"></div>
         <div class="tab-panel" id="tab-exp"></div>
         <div class="tab-panel" id="tab-core"></div>
+        <div class="tab-panel" id="tab-charts"></div>
         <div class="tab-panel" id="tab-stock"></div>
       </div>
     </div>`;
@@ -498,6 +504,31 @@ export async function well(id) {
       "<th>回次</th><th>设计顶深</th><th>设计底深</th><th>设计进尺</th><th>设计心长</th><th>审批</th>",
       (x) => `<td>第${x.run_no}筒</td><td class="num">${fmt(x.design_top_md,2)}</td><td class="num">${fmt(x.design_bottom_md,2)}</td>
         <td class="num">${fmt(x.design_footage,2)}</td><td class="num">${fmt(x.design_core_length,2)}</td><td>${esc(x.approved_by)}</td>`, "coring_plan")}`;
+
+  document.getElementById("tab-charts").innerHTML = `
+    <section class="panel">
+      <div class="panel-hd"><span class="bar"></span><h3>图件成果</h3><span class="hd-sub">CHART OUTPUTS</span></div>
+      <div class="table-wrap"><table class="grid">
+        <thead><tr><th>分类</th><th>模板</th><th>版本</th><th>项目</th><th>输出</th><th>状态</th><th>生成时间</th><th>操作</th></tr></thead>
+        <tbody>${charts.length ? charts.map((x) => `<tr>
+          <td>${esc(x.category_name)}</td><td class="left">${esc(x.name)}</td>
+          <td>${esc(x.version || "—")}</td><td>${esc(x.project || "通用")}</td><td>${esc(x.output_type)}</td>
+          <td>${x.status === "已生成" ? '<span class="badge-soft badge-green">已生成</span>' : `<span class="badge-soft">${esc(x.status || "未生成")}</span>`}</td>
+          <td>${esc(x.generated_at || "—")}</td>
+          <td>
+            ${x.code === "CORE_BASIC" || x.code === "CORE_COMPOSITE" ? `<a class="btn small ghost" href="#/well/${id}?tab=column">查看</a>` : ""}
+            ${!canWrite || x.status === "已生成" ? "" : `<button class="btn small chart-set" data-tid="${x.id}">标记已生成</button>`}
+          </td>
+        </tr>`).join("") : `<tr><td colspan="8">${empty("暂无图件模板")}</td></tr>`}</tbody>
+      </table></div>
+    </section>`;
+  document.querySelectorAll(".chart-set").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await api(`/api/chart/well/${id}/${b.dataset.tid}`, { method: "POST", body: JSON.stringify({ status: "已生成" }) });
+      toast("图件成果已更新", "ok");
+      well(id);
+    } catch (e) { toast(e.message || "更新失败", "error"); }
+  }));
 
   document.getElementById("tab-stock").innerHTML = d.inventory.length ? `
     <section class="panel"><div class="table-wrap"><table class="grid">
@@ -1256,6 +1287,7 @@ export async function admin() {
   const el = root();
   el.innerHTML = loading("正在加载系统信息");
   const d = await api("/api/admin");
+  const tpl = await api("/api/chart/templates?all=1").catch(() => ({ items: [], categories: [] }));
   el.innerHTML = `
     <div class="section-head" style="margin-bottom:12px">
       <div class="sh-sub">用户与角色 / 字典编码 / 操作审计</div>
@@ -1282,12 +1314,68 @@ export async function admin() {
       </section>
     </div>
     <section class="panel" style="margin-top:14px">
+      <div class="panel-hd"><span class="bar"></span><h3>图件模板</h3><span class="hd-sub">CHART TEMPLATES</span>
+        <div class="hd-actions"><button class="btn small" id="addChartTemplate">＋ 新增模板</button></div>
+      </div>
+      <div class="table-wrap"><table class="grid">
+        <thead><tr><th>分类</th><th>编码</th><th>名称</th><th>版本</th><th>项目</th><th>输出</th><th>已生成</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody>${(tpl.items || []).map((x) => `<tr>
+          <td>${esc(x.category_name)}</td><td>${esc(x.code)}</td><td class="left">${esc(x.name)}</td>
+          <td>${esc(x.version || "—")}</td><td>${esc(x.project || "通用")}</td><td>${esc(x.output_type)}</td>
+          <td class="num">${x.generated_count}</td>
+          <td>${x.is_active ? '<span class="badge-soft badge-green">启用</span>' : '<span class="badge-soft">停用</span>'}</td>
+          <td><button class="btn small ghost tpl-toggle" data-id="${x.id}" data-active="${x.is_active ? 1 : 0}">${x.is_active ? "停用" : "启用"}</button></td>
+        </tr>`).join("")}</tbody>
+      </table></div>
+    </section>
+    <section class="panel" style="margin-top:14px">
       <div class="panel-hd"><span class="bar"></span><h3>最近操作日志</h3><span class="hd-sub">AUDIT LOG</span></div>
       <div class="table-wrap"><table class="grid">
         <thead><tr><th>用户</th><th class="left">操作</th><th class="left">对象</th><th>时间</th></tr></thead>
         <tbody>${d.audit.map((a) => `<tr><td>${esc(a.user)}</td><td class="left">${esc(a.action)}</td><td class="left">${esc(a.target)}</td><td>${esc(a.created_at)}</td></tr>`).join("")}</tbody>
       </table></div>
     </section>`;
+  document.getElementById("addChartTemplate").addEventListener("click", () => openChartTemplateModal(tpl.categories || []));
+  document.querySelectorAll(".tpl-toggle").forEach((b) => b.addEventListener("click", async () => {
+    try {
+      await api(`/api/chart/templates/${b.dataset.id}`, { method: "PUT", body: JSON.stringify({ is_active: b.dataset.active === "1" ? 0 : 1 }) });
+      toast("模板状态已更新", "ok");
+      admin();
+    } catch (e) { toast(e.message || "更新失败", "error"); }
+  }));
+}
+
+function openChartTemplateModal(categories) {
+  const opts = categories.map((c) => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join("");
+  document.getElementById("modalRoot").innerHTML = `
+    <div class="modal-mask"><div class="modal">
+      <div class="modal-hd">新增图件模板<button class="close" id="mClose">×</button></div>
+      <div class="modal-bd">
+        <div class="form-row"><label>模板编码</label><input class="input" id="tplCode" placeholder="例如 CORE_COMPOSITE"></div>
+        <div class="form-row"><label>模板名称</label><input class="input" id="tplName" placeholder="例如 岩心综合图"></div>
+        <div class="form-row"><label>分类</label><select class="select" id="tplCat">${opts}</select></div>
+        <div class="form-row"><label>版本</label><input class="input" id="tplVersion" placeholder="例如 V10"></div>
+        <div class="form-row"><label>项目/客户</label><input class="input" id="tplProject" placeholder="通用则留空"></div>
+        <div class="form-row"><label>输出类型</label><select class="select" id="tplOutput"><option>交互图</option><option>截图</option><option>PDF</option><option>文件</option></select></div>
+      </div>
+      <div class="modal-ft"><button class="btn ghost" id="mCancel">取消</button><button class="btn primary" id="mSave">保存</button></div>
+    </div></div>`;
+  const close = () => document.getElementById("modalRoot").innerHTML = "";
+  document.getElementById("mClose").addEventListener("click", close);
+  document.getElementById("mCancel").addEventListener("click", close);
+  document.getElementById("mSave").addEventListener("click", async () => {
+    try {
+      await api("/api/chart/templates", { method: "POST", body: JSON.stringify({
+        code: document.getElementById("tplCode").value.trim(),
+        name: document.getElementById("tplName").value.trim(),
+        category_code: document.getElementById("tplCat").value,
+        version: document.getElementById("tplVersion").value.trim(),
+        project: document.getElementById("tplProject").value.trim(),
+        output_type: document.getElementById("tplOutput").value,
+      }) });
+      close(); toast("模板已新增", "ok"); admin();
+    } catch (e) { toast(e.message || "新增失败", "error"); }
+  });
 }
 
 // ============================================================ help

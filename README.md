@@ -230,3 +230,25 @@ python app/seed.py
 - **审计与软删除**：新增/更新/删除/恢复/上传/标注/库存流转写 `audit`；删除是软删除，可从“回收站”恢复。
 - **Excel 导入增强**：支持预检查（dry-run）、业务编码解析（井号/回次号/段号/样品号）、错误 CSV 下载；参考 ID 表随模板提供。
 - **PostgreSQL/MinIO**：Schema、Seed、Compose、S3 上传代码已同步；本机没有 Docker/PG/MinIO，未做实例级联调。
+
+## 图件模板与成果（方案 B）
+
+已从“宽表列”改为“模板注册表 + 井成果表”：
+
+- `chart_category`：基本图、综合图、荧光图切、岩屑综合图、多井对比、钻孔柱状图、岩心层模板、成果
+- `chart_template`：模板编码、名称、分类、版本、项目/客户、输出类型、配置 JSON、启用状态
+- `well_chart`：井 × 模板的成果状态、文件/图片地址、生成时间、生成人
+
+界面：
+
+- 井档案新增“图件成果”页签，按模板展示状态；可查看柱状图、标记已生成。
+- 设置页新增“图件模板”，可新增模板、启用/停用模板。
+- 原有 `products` 保留为成果总览，历史 6 类成果已迁移到 `well_chart`。
+
+接口：
+
+- `GET /api/chart/templates`（`all=1` 需管理员）
+- `POST /api/chart/templates`（管理员）
+- `PUT /api/chart/templates/<id>`（管理员）
+- `GET /api/chart/well/<well_id>`
+- `POST /api/chart/well/<well_id>/<template_id>`（录入员/管理员）

@@ -38,7 +38,11 @@ def insert_block(table, columns, rows, map_col=None):
         vals = []
         for c in columns:
             src = map_col.get(c, c) if map_col else c
-            vals.append(lit(r.get(src)))
+            value = r.get(src)
+            if (table == "users" and c == "is_active") or (table == "chart_template" and c == "is_active"):
+                vals.append("TRUE" if value else "FALSE")
+            else:
+                vals.append(lit(value))
         lines.append(f"INSERT INTO {table} ({cols}) VALUES ({', '.join(vals)});")
     return "\n".join(lines) + "\n"
 
@@ -50,7 +54,7 @@ def main():
     out.append("-- Generated from app/data/core.db; do not edit by hand.\n")
     out.append("SET client_encoding = 'UTF8';\nBEGIN;\n")
     out.append("""TRUNCATE TABLE
-  image_embedding, annotations, image_calibration, txns, inventory,
+  well_chart, chart_template, chart_category, image_embedding, annotations, image_calibration, txns, inventory,
   experiment_depth, experiments, samples, core_sidewall, core_vug,
   core_fracture, core_observation, coring_plan, products, scans,
   image_depth, images, section_depth, sections, strata, run_depth,
@@ -60,6 +64,8 @@ RESTART IDENTITY CASCADE;
 
     # simple tables first
     simple = [
+        ("chart_category", None, None),
+        ("chart_template", None, None),
         ("dictionary", None, None),
         ("wells", None, None),
         ("runs", None, None),
@@ -81,6 +87,7 @@ RESTART IDENTITY CASCADE;
         ("image_calibration", None, None),
         ("users", None, None),
         ("meta", None, None),
+        ("well_chart", None, None),
     ]
 
     for table, map_col, _ in simple:
@@ -138,7 +145,7 @@ WHERE top_md IS NOT NULL AND bottom_md IS NOT NULL AND top_md < bottom_md;
 """)
 
     # sequences
-    id_tables = ["wells", "runs", "strata", "sections", "images", "scans", "products",
+    id_tables = ["chart_template", "well_chart", "wells", "runs", "strata", "sections", "images", "scans", "products",
                  "core_observation", "core_fracture", "core_vug", "core_sidewall",
                  "samples", "experiments", "coring_plan", "inventory", "txns",
                  "annotations", "image_calibration", "users", "audit"]

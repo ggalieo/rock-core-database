@@ -574,6 +574,8 @@ def main():
     build_core_gap()
     from migrate_p0 import main as build_p0
     build_p0()
+    from migrate_charts import main as build_charts
+    build_charts()
 
 
 if __name__ == "__main__":

@@ -23,6 +23,7 @@ import auth
 import audit
 from excel_entry import import_rows as entry_import, template as entry_template
 import image_entry
+import charts
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -256,8 +257,10 @@ def api_well_detail(conn, wid):
     for v in core["vugs"]:
         v["type_name"] = dict_map.get(("vug_type", v.get("type_code")), v.get("type_code"))
         v["fill_name"] = dict_map.get(("fill", v.get("fill_code")), v.get("fill_code"))
+    chart_data = charts.well_charts(conn, wid)
     return {"well": well, "runs": runs, "images": images, "experiments": experiments,
-            "inventory": inventory, "products": prods, "core": core}
+            "inventory": inventory, "products": prods, "core": core,
+            "charts": chart_data["items"], "chart_categories": chart_data["categories"]}
 
 
 def api_image_detail(conn, iid):
@@ -451,6 +454,16 @@ class Handler(BaseHTTPRequestHandler):
                 if path == "/api/entry/recent":
                     entity = qs.get("entity", [""])[0]
                     return ok(self, entry_recent(conn, entity))
+                if path == "/api/chart/templates":
+                    include = qs.get("all", ["0"])[0].lower() in ("1", "true", "yes")
+                    if include:
+                        user = auth.current_user(self)
+                        if not user or user.get("role_key") != "admin":
+                            return fail(self, "需要管理员权限", 403)
+                    return ok(self, charts.templates(conn, include_inactive=include))
+                m = re.match(r"^/api/chart/well/(\d+)$", path)
+                if m:
+                    return ok(self, charts.well_charts(conn, int(m.group(1))))
                 if path == "/api/entry/list":
                     entity = qs.get("entity", [""])[0]
                     deleted = qs.get("deleted", ["0"])[0].lower() in ("1", "true", "yes")
@@ -487,6 +500,11 @@ class Handler(BaseHTTPRequestHandler):
             user = writer(self)
             if not user:
                 return
+            m = re.match(r"^/api/chart/templates/(\d+)$", path)
+            if m:
+                if user.get("role_key") != "admin":
+                    return fail(self, "需要管理员权限", 403)
+                return ok(self, charts.update_template(conn, int(m.group(1)), body, user))
             m = re.match(r"^/api/entry/([a-z_]+)/(\d+)$", path)
             if m:
                 return ok(self, entry_update(conn, m.group(1), int(m.group(2)), body, actor=user))
@@ -555,6 +573,13 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/inventory/txn":
                 data = post_txn(conn, body, user)
                 return ok(self, data) if data else fail(self, "section not found", 404)
+            m = re.match(r"^/api/chart/well/(\d+)/(\d+)$", path)
+            if m:
+                return ok(self, charts.set_status(conn, int(m.group(1)), int(m.group(2)), body, user))
+            if path == "/api/chart/templates":
+                if user.get("role_key") != "admin":
+                    return fail(self, "需要管理员权限", 403)
+                return ok(self, charts.create_template(conn, body, user), 201)
             m = re.match(r"^/api/entry/import/([a-z_]+)$", path)
             if m:
                 data = entry_import(conn, m.group(1), body.get("filename", ""), body.get("data", ""),

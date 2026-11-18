@@ -1,0 +1,21 @@
+# OS / Office temp
+Thumbs.db
+desktop.ini
+.DS_Store
+~$*
+~$*.pptx
+~$*.docx
+~$*.xlsx
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# Local runtime / render temp
+.dsh-office-*
+*.log
+*.tmp
+*.bak

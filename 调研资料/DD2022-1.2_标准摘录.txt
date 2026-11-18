@@ -1,0 +1,748 @@
+ 
+ 
+ 
+ 
+ 
+Technical 
+Standard 
+of 
+China 
+Geological 
+Survey 
+DD 2026—1.2 
+ 
+ 
+ 
+ 
+ 
+Code of practice for core digitalization - Part 
+2: Surface image digitalization 
+ 
+岩心数字化技术规程 第2 部分：表面图像
+数字化 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+China Geological Survey 
+July 2026
+
+DD 2026-1.2 
+I 
+ 
+Contents 
+Foreword .................................................................................................................................................................. II 
+Introduction .......................................................................................................................................................... III 
+1 Scope ...................................................................................................................................................................... 1 
+2 Normative references ....................................................................................................................................... 1 
+3 Terms and definitions ...................................................................................................................................... 1 
+4 Basic requirements ........................................................................................................................................... 2 
+5 Preparation .......................................................................................................................................................... 2 
+5.1 Equipment preparation .................................................................................................................................................. 2 
+5.2 Site preparation ................................................................................................................................................................. 2 
+5.3 Technicians preparation ................................................................................................................................................ 3 
+5.4 Cores preparation ............................................................................................................................................................. 3 
+6 Core image acquisition .................................................................................................................................... 3 
+6.1 Core surface image photography ............................................................................................................................... 3 
+6.2 Core true color image scanning .................................................................................................................................. 3 
+7 Core image processing ..................................................................................................................................... 5 
+7.1 Photographed core surface image processing ...................................................................................................... 5 
+7.2 Core true color scanning image processing ........................................................................................................... 5 
+8 Data collation ...................................................................................................................................................... 6 
+8.1 Core image data ................................................................................................................................................................. 6 
+8.2 Core digitalization images record table ................................................................................................................... 6 
+9 Quality inspection ............................................................................................................................................. 7 
+9.1 General requirements ..................................................................................................................................................... 7 
+9.2 Completeness inspection ............................................................................................................................................... 7 
+9.3 Normalization inspection .............................................................................................................................................. 7 
+9.4 Accuracy inspection ......................................................................................................................................................... 7 
+10 Report preparation and data submission .............................................................................................. 7 
+10.1 Report preparation ........................................................................................................................................................ 7 
+10.2 Data submission ............................................................................................................................................................. 8 
+Annex A (normative) Core image photography record table ................................................................ 9 
+Annex B （normative） Core true color image scanning record table ............................................ 10 
+Annex C （normative） Quality inspection record table ...................................................................... 12 
+Bibliography ......................................................................................................................................................... 13 
+
+DD 2026—1.2 
+II 
+Foreword 
+China Geological Survey is in charge of this English translation. In case of any doubt about the 
+contents of English translation, the Chinese original shall be considered authoritative. 
+This document was drafted in accordance with the rules given in the GB/T 1.1-2020 Directives for 
+standardization—Part 1: Rules for the structure and drafting of standardizing documents. 
+This document is the second part of DD 2022-1 Code of practice for core digitalization. DD 2022-1 has 
+been issued three parts as follows: 
+——Part 1: General; 
+——Part 2: Surface image digitalization; 
+——Part 3: Spectral scanning. 
+This document was proposed and managed by China Geological Survey, Ministry of Natural 
+Resources of the People’s Republic of China. 
+This document was drafted by: The Cores and Samples Center of Natural Resources, China Geological 
+Survey, Tianjin Center, China Geological Survey, Geological Archives of Anhui Province, Information 
+Center of Natural Resources of Gansu Province, Natural Resources Archives of Hebei Province, 
+Geological Data Archives of Jiangsu Province, North China Oil and Gas Company, Sinopec Corp, 
+Natural Resources Archives of Guangdong Province, Geological Data Archives of Heilongjiang 
+Province, Natural Resources Affairs Service Center of Liaoning Province, and College of Electronics 
+and Information Engineering, Sichuan University. 
+The major drafters are: Shi Weixin, Gao Pengxin, Liu Hong, Li Jianguo, Hui Guangji, Wang Jiasong, Gao 
+Qingnan, Wang Ruihong, Guo Dongxu, Mi Shengxin, Zhang Hong, Zhang Guangcheng, Liu Xiao, Li 
+Qiuling, Zhang Qiyan, Sun Huafeng, Ge Tianzhu, Li Dawei, He Xiaohai, Su Xunxin, Shi Shaojian, Yun 
+Xiaoguang, Meng Keke, Li Danqiu, Yi Tianyu, Jie Guiqin, Chen Jie, Wang Hao, Wang Chaodong, Jiang 
+Zhichao, Li Dongfeng, and Ge Jiakun. 
+The main translation organizations of the English version of this document are: Cores and Samples 
+Center of Natural Resources, China Geological Survey, and Tianjin Center, China Geological Survey. 
+The main translators of the English version of this document are: Li Qiuling, Gao Pengxin, Shi 
+Weixin, Gao Qingnan, Hui Guangji, Wang Jiasong, and Zhang Bo. 
+China Geological Survey, Ministry of Natural Resources of the People's Republic of China is 
+responsible for the explanation of this document. 
+ 
+ 
+
+DD 2026-1.2 
+III 
+ 
+Introduction 
+Cores are the fundamental material for understanding the underground geological information. The 
+surface and internal information of cores such as images, minerals, elements, structures, textures, 
+physical properties, and other information can be obtained non-destructively (or micro-
+destructively), continuously, fast, and in high-resolution by core digitalization. Core digitalization can 
+achieve the digital data preservation and efficient utilization of geological cores, which can provide 
+technical services and data supports for geological survey, mineral resources exploration, ecological 
+environment assessment, geological science research, and disaster prevention and mitigation, etc. 
+DD 2022-1 is a series of basic and general standards, which can be used as the guidance on core 
+digitalization for the core storage organizations and project undertakers. Considering the different 
+working principles, methods, and requirements of various types of core digitization technologies, DD 
+2022-1 is planned to consist of the following seven parts: 
+——Part 1: General, which establishes the general principles and basic requirements for core 
+digitalization; 
+——Part 2: Surface image digitalization, which establishes operational, traceable and verifiable 
+procedures and requirements for core surface image acquisition; 
+——Part 3: Spectral scanning, which establishes operational, traceable and verifiable procedures and 
+requirements for collecting core spectral reflectance and mineral information; 
+——Part 4: X-ray fluorescence element, which establishes operational, traceable and verifiable 
+procedures and requirements for collecting core elemental information; 
+——Part 5: Multi-scale CT scanning, which establishes operational, traceable and verifiable 
+procedures and requirements for collecting core surface and internal structural information; 
+——Part 6: Micro-region scanning electron microscope imaging, which establishes operational, 
+traceable and verifiable procedures and requirements for collecting core micro-regional surface and 
+internal information about mineral, element and structure; 
+——Part 7: Physical parameters, which establishes operational, traceable and verifiable procedures 
+and requirements for collecting core physical information about resistivity, magnetic susceptibility, 
+etc. 
+The core surface images reflect the basic geological information of the cores. The surface color, 
+texture, mineral composition, oil-bearing characteristics, etc. of partial cores have undergone 
+significant changes, due to weathering, leaching and other reasons during long-term storage, which 
+make it difficult to present their original appearances. The first-hand core surface image information 
+can be obtained by core digitization in a timely and standardized manner, to establish a database. 
+Based on the online services, the remote query and loan of the cores can be realized, which in turn 
+promotes the sharing and utilization of core digital resources. 
+ 
+
+DD 2026—1.2 
+1 
+ 
+Code of practice for core digitalization - Part 2: Surface image 
+digitalization 
+1 Scope 
+This document specifies the basic requirements and operating methods for core preparation, image 
+acquisition, image processing, data collation, quality inspection, report preparation and data 
+submission of core surface image digitalization. 
+This document is applicable to core surface image digitalization, including core surface image 
+photography and core true color image scanning for various types of cores generated from mineral 
+geology, petroleum geology, hydrogeology, engineering geology and environmental geology work. 
+2 Normative references 
+The following normative referenced documents are indispensable for the application of this 
+document. For dated references, only the edition cited applies. For undated references, the latest 
+edition of the referenced document (including any amendments) applies. 
+DD 2022—1.1 Code of practice for core digitalization - Part 1: General 
+3 Terms and definitions 
+For the purposes of this document, the terms and definitions given in DD 2022-1.1 and the following 
+apply. 
+3.1 
+core image photography 
+process of capturing the image information on the upper surface of the cores in a single box using a 
+digital camera or a mobile phone 
+3.2 
+core true color image scanning 
+process of continuously collecting the core surface image information using a desktop core image 
+scanner  
+3.3 
+core transitional true color image scanning 
+process of continuously collecting the image information on the upper surface of the cores in a single 
+box using a desktop core image scanner 
+3.4 
+core rolling true color image scanning 
+process of continuously collecting the circumferential surface image information of a single columnar 
+core using a desktop core image scanner 
+3.5 
+white balance 
+process of making the image radiation with relative spectral energy distribution consistent with the 
+subject's radiation when the subject's light source is compensated to be visually achromatic by 
+adjusting the electronic image color channel gain or through image processing. 
+
+DD 2026—1.2 
+2 
+[SOURCE: GB/T 29298-2012, 3.10] 
+4 Basic requirements 
+4.1 Core surface image digitalization work process mainly include preparation, core image 
+acquisition, image processing, data collation and organization, quality inspection, report preparation 
+and data submission . 
+4.2 For the cores drilled at the field drilling site, core surface image photography shall be carried out 
+in time after cleaning and before sampling. 
+4.3 For the cores that have been screened and stored in the geological archives, core true color image 
+scanning shall be carried out in time on the basis of the core surface image photography at the field 
+drilling site. 
+4.4 For the columnar samples of seabed sediments encapsulated by casings, core surface image 
+photography or core true color image scanning shall be carried out after splitting and before 
+sampling when splitting casings for testing and analyzing samples. 
+4.5 The images shall be looked as closely to those observed with the naked eyes as possible, while 
+the brightness and color shall not be distorted. 
+4.6 The images shall be clear, with which the main rock-forming minerals, tectonic structures, 
+mineralization alteration and other geological features can be clearly observed. The image resolution 
+of a digital camera or mobile phone shall not be less than 100 PPI, the image resolution of a core 
+image scanner shall not be less than 300 DPI, and the clarity shall not be less than 24-bit true color. 
+5 Preparation 
+5.1 Equipment preparation 
+5.1.1 Before carrying out core surface image photography or core true color image scanning, the 
+equipment shall be checked. After assuring that the equipment functions well, core surface image 
+photography or core true color image scanning can be carried out. 
+5.1.2 The cut-and-try core surface image photography or core true color image scanning shall be 
+carried out with the normal-performance equipment, and the samples shall be observed and 
+evaluated to confirm whether the equipment meet the requirements. If the color of the sample is 
+distorted, a standard whiteboard shall be photographed or scanned to obtain the standard 
+whiteboard images, with which the white balance test and chromaticity calibration of the equipment 
+could be conducted applied with the white balance setting software that comes with the equipment. 
+5.2 Site preparation 
+5.2.1 Core surface image photography shall be carried out at flat places with sufficient light and 
+without direct sunlight. If supplementary light sources are required, daylight lamps shall be used. 
+5.2.2 The core true color image scanning site temperature shall be controlled between 10℃ and 
+30℃ , and the relative humidity shall be controlled between 30% and 70%. The equipment shall not 
+be placed under the environment exposed to vibration, humidity and direct sunlight. When scanning 
+with a white light source, the site shall be with sufficient and soft light, and the illuminance on the 
+core surface shall not be lower than 750 lx, and when scanning with a fluorescent light source, a dark 
+room environment shall be created by using a hood to ensure that the scanning is not disturbed by 
+other light sources. 
+
+DD 2026—1.2 
+3 
+5.3 Technicians preparation 
+5.3.1 Technicians shall be trained on equipment operation, and quality inspection, etc. 
+5.3.2 Technicians shall have operated the equipment accompanied and guided by the skillful 
+operators who have been operating the equipment for no less than 40 h. 
+5.4 Cores preparation 
+Sort and clean the cores according to DZ/T 0441.1-2023 to ensure that the cores are tightly butted 
+in the correct order, the core surface is clean, and the central axis is basically on a straight line before 
+carrying out core surface image photography or core true color image scanning. 
+6  Core image acquisition 
+6.1 Core surface image photography 
+6.1.1 Arrange the core in ascending order of the drilling depth and ensure that the core box is 
+placed horizontally with the starting depth at the upper left corner and the ending depth at the lower 
+right corner. 
+6.1.2 Lay the core tags and run number labels horizontally on the lower part of each run for easy 
+information access at a later stage. 
+6.1.3 Place the scale at the lower right corner of the core box and the standard color card should 
+be placed at the same time. 
+6.1.4 Set the mode, adjust the angle, and focus the lens according to the equipment instructions. 
+6.1.5 Adjust the field of view to ensure that the core image accounts for more than 90% of the entire 
+field of view. 
+6.1.6 A bench should be used to fix the equipment just above the core to ensure that the optical 
+axis of the camera is perpendicular to the core surface; the remote control button should be used to 
+start the shooting procedure, which can remove jitter impacts on the image acquisition quality. 
+6.1.7 Such operations shall be done as enlarging the image to check whether the image of the cores 
+and the round-trip sign could meet the requirements of 4.4 and 4.5, after completing the core images 
+acquisition in a whole box, and if not, or the image of the round-trip sign is not clear, photography 
+shall be carried out again. 
+6.1.8 The core surface image photography record (as specified in Annex A) shall be filled in 
+synchronously when carrying out core surface image photography. 
+6.2 Core true color image scanning  
+6.2.1 Instrument warm-up 
+The core true color image scanner shall be warmed up before put into use, and start scanning until 
+the performance and light source of the instrument are stable. 
+6.2.2 Light source and scanning method selection 
+Select the light source (including white light and fluorescence) and the scanning method (including 
+translational image scanning and rolling image scanning) reasonably according to the core types and 
+research purposes. White light source is suitable for all cores, and fluorescent light source is suitable 
+for cores containing organic materials; translational image scanning is suitable for all cores, and 
+rolling image scanning is suitable for columnar cores from important core sections. 
+6.2.3 Scanner parameter setting 
+6.2.3.1 Measure the size of the core box, and enter the data such as the length, width and channel 
+
+DD 2026—1.2 
+4 
+number of the core box into the scanning software of the scanner. The size shall not exceed the 
+maximum range. 
+6.2.3.2 Set the contrast, brightness and resolution. It is recommended the contrast and brightness be 
+the default values, and the resolution shall meet the requirement of Clause 4.6 of this document. The 
+resolution for cores from the important drill holes, layers and key sections could be appropriately 
+enhanced to 400 DPI to 800 DPI. The selection of the cores from the important drill holes, layers and 
+key sections shall meet the requirements of DZ/T 0441.1-2023, Clause 5. 
+6.2.4 Light source adjustment 
+Adjust the aperture of the lens, the height of the lamp holder or the brightness of the light according 
+to the light conditions and the color of the cores. Check the acquired testing core images to make 
+them looked as closely as possible to those images observed with naked eyes. The requirements are 
+as follows: 
+a) for dark-color cores with low reflectance, such as carbonaceous mudstone, mafic or ultramafic 
+igneous, etc., the aperture shall be appropriately enlarged or the height of the lamp holder shall 
+be lowered or the brightness of the light shall be enhanced to improve the brightness of the 
+acquired images to prevent minerals from being unidentifiable due to dark images, 
+b) for light-color cores with high reflectance, such as sandstone, limestone, kaolin, mica schist, etc., 
+the aperture shall be appropriately reduced or the height of the lamp holder shall be lifted or the 
+brightness of the light shall be reduced to prevent the acquired images from being distorted due 
+to overexposure, and 
+c) for cores composed of light-color and dark-color minerals, the size of the aperture, the height of 
+the lamp holder or the brightness of the light shall be adjusted, on the basis that the lightest-color 
+minerals are not overexposed. Meanwhile, the content of light-color minerals shall be considered 
+at the same time. However, if the light-color minerals only incidentally occurred, the content 
+might not be considered. 
+6.2.5 Core translational true color image scanning  
+Carry out core translational true color image scanning according to the following workflows: 
+a) adjust the lamp holder of the scanner, to make it perpendicular to the travel direction of the lens, 
+b) place the core box on the workbench, parallel to the travel direction of the lens, 
+c) adjust the scanning lens by using the scanning lift control button and the fixed focal ruler. The 
+scanning lens shall focus on the core surface, and if the core surface is uneven, the average height 
+shall prevail, 
+d) start the scanning work, and shall check whether the images could meet the requirements of 4.4 
+and 4.5, and if not, reset the scanner or re-scan the cores, and 
+e) shall fill in the core true color image scanning record table (as specified in Annex B) 
+synchronously when carrying out core translational true color image scanning. 
+6.2.6 Core rolling true color image scanning 
+Carry out core rolling true color image scanning according to the following workflows: 
+a) adjust the lamp holder of the scanner to make it perpendicular to the travel direction of the lens, 
+b) place the core flat on the two rubber rollers of the scanner and adjust the width of the rubber 
+rollers to make sure that the core rotates uniformly around the central axis, 
+c) adjust the scanning lens by using the scanning lift control button and the fixed focal ruler. The 
+
+DD 2026—1.2 
+5 
+scanning lens shall focus on the core surface, 
+d) enter the scanning length and other information and then start rolling scanning. For the single 
+long core, multiple scanning shall be done section by section to ensure the integrity of the 
+acquired images, and each scanning shall have no less than 5% repetition of the previous 
+scanning, 
+e) shall check whether the images could meet the requirements of 4.4 and 4.5 during the scanning 
+work, and if not, reset the scanner or re-scan the cores, and 
+f) 
+shall fill in the core true color image scanning record (as specified in Annex B) synchronously 
+when carrying out core rolling true color image scanning. 
+7 Core image processing 
+7.1 Photographed core surface image processing 
+7.1.1 The acquired photographed core surface images shall be rectified and adjusted on the 
+brightness, contrast and saturation, after completing the shooting of the cores from one drill hole 
+(borehole), to make the images looked as closely to those observed with the naked eyes as possible. 
+7.1.2 Crop the acquired single-box core images along the outer edge of the core box to remove 
+redundant parts. 
+7.1.3 The processed image files shall be named as "drill hole (borehole) no._core box no.".  
+EXAMPLE: The image files of the first box of the drill hole ZK001 shall be named as “ZK001_001”. 
+7.1.4 The core surface image photography record (as specified in Annex A) shall be filled in 
+synchronously when carrying out photographed core surface images processing. 
+7.2 Core true color scanning image processing 
+7.2.1 The acquired core scanning images shall be rectified and adjusted including the brightness, 
+contrast and saturation, after completing the scanning of the cores from one drill hole (borehole), to 
+make the images looked as closely to those observed with the naked eyes as possible. 
+7.2.2 The single-box core images can be obtained by translational scanning, which shall be cropped 
+according to the roundtrip (core barrel). The single core image can be obtained by rolling image 
+scanning. If a single core is long, multiple scanning shall be done section by section and the scanned 
+multi-section original images shall be stitched with the images mosaic software. Manual fine-tuning 
+shall be carried out with reference to the surface texture and mineral distribution of the cores to 
+ensure that there is no obvious splicing trace in the single core image after mosaic. 
+7.2.3 The processed image file acquired by translational image scanning of a single core shall be 
+named as “HC + roundtrip no.”. When one roundtrip of the cores occupies two or more compartments 
+in the core boxes, the image file after mosaic consists of multiple images, which needs to be 
+distinguished by adding suffix names.   
+EXAMPLE: The first core image file of the fifth roundtrip shall be named as “HC5_1”. 
+7.2.4 The single core image file obtained by rolling image scanning shall be named as “core box 
+no._compartment no._core serial no.”. 
+EXAMPLE: the image file of the third core in the second compartment in the fourth core box shall be named as 
+“4_3_2”. 
+7.2.5 The starting and ending depths of each core image shall be calculated again after image 
+cropping or mosaic, according to the Formula (1). 
+
+DD 2026—1.2 
+6 
+𝐻= 𝐻1 + 𝐿𝑆
+⁄ 
+(1) 
+where 
+ 
+H 
+is the actual depth of the core image at the starting (ending) point, in meters; 
+H1 
+is the starting depth of each roundtrip of the core image at the starting (ending) point, in 
+meters; 
+L 
+is the actual length from the starting (ending) point to each roundtrip of the core image, in 
+meters; 
+ 
+S 
+is the actual core recovery percentage at the starting (ending) point. 
+7.2.6 The core true color image scanning record table (as specified in Annex B) shall be filled in 
+synchronously when carrying out core true color scanning images processing. 
+8 Data collation 
+8.1 Core image data 
+8.1.1 Core image data files shall be organized in three-level folders, including the image data of all 
+drill holes of the project, the image data of a single drill hole, and the original image data of a single 
+drill hole (L0), or the processed image data of a single drill hole (L1) after image cropping and mosaic. 
+8.1.2 Level 1 folder is used to store the core image data of all drill holes of the project. The folder 
+shall be named as "project code _IMG". 
+EXAMPLE: the core image data of DD2020009 project shall be named as "DD2020009_IMG". 
+8.1.3 Level 2 folder is used to store all the photographed or scanning image data of the drill hole. 
+The folder shall be named as "drill hole number_IMG". 
+EXAMPLE: the image data of drill hole ZK01 shall be named as "ZK01_IMG". 
+8.1.4 Level 3 folder consists of the original core image data folder of the drill hole (L0) and the 
+processed core image data folder of the drill hole (L1), storing the original core image data obtained 
+by the scanner and the processed image data after image cropping and mosaic respectively. The two 
+folders shall be named as "drill hole number_L0_IMG" and "drill hole number_L1_IMG" respectively. 
+EXAMPLE: ZK01 original core image data shall be named as "ZK01_L0_IMG". 
+8.1.5 The core image data shall be in JPG or TIFF format stored in the corresponding folder. 
+8.2 Core digitalization images record table 
+8.2.1 All the core photographing or scanning images record tables shall be examined to check 
+whether the recording depth, the roundtrip information, and the core length, etc. are inaccurate, 
+missing or redundant. 
+8.2.2 Arrange the paper core photographing or scanning images record tables of each drill hole 
+(borehole) according to the sequence of recording depth from the upper part to the lower part, and 
+bind together into book form.  
+8.2.3 Enter the paper core photographing or scanning images record tables into the computer to 
+generate the electronic form. 
+
+DD 2026—1.2 
+7 
+9 Quality inspection 
+9.1 General requirements 
+9.1.1 The data quality shall be inspected, and the quality inspection record table (as specified in 
+Annex C) shall be filled in after finishing the core image acquisition and processing. 
+9.1.2 Quality inspection consists of self-inspection, mutual inspection and sampling inspection. 100% 
+self-inspection and mutual inspection shall be conducted throughout the core image photography 
+and core true color image scanning, and at least 20% sampling inspection shall be conducted.  
+9.1.3 Quality inspection shall be conducted from the aspects of completeness, normalization, and 
+accuracy of the data and documents.  
+9.1.4 The quality problems identified during the inspection such as image blurriness shall be 
+recorded in a timely manner and the causes shall be investigated. For problems that cannot be 
+corrected (see 9.4.1, 9.4.2 and 9.4.3 for details), the scanning (photography) work shall be re-
+conducted. 
+9.2 Completeness inspection 
+9.2.1 Inspect whether all the record tables of core image photography and core true color image 
+scanning are filled in completely and accurately. 
+9.2.2 Inspect whether all the original core images and the processed core images by cropping or 
+mosaic are complete. 
+9.2.3 Inspect whether the image data is complete, and whether there are missing parts needed to 
+be photographed or scanned. 
+9.3 Normalization inspection 
+Inspect whether various levels of folders meet the requirements, and whether the names of various 
+files are normative. 
+9.4 Accuracy inspection 
+9.4.1 Inspect whether the images are  looked as closely to those observed with the naked eyes, and 
+if there is uneven brightness or color distortion, the scanning (photography) work shall be re-
+conducted. 
+9.4.2 Inspect whether the images are clear and whether the major geological features such as rock-
+forming minerals, textures and structures, and mineralization and alteration can be clearly observed, 
+and if the images are blurry, the scanning (photography) work shall be re-conducted. 
+9.4.3 Inspect whether the round-trip labels are clear after capturing the images, and if the round-
+trip labels  are blurry, photography work shall be re-conducted. 
+9.4.4 Inspect whether the images correspond one-to-one with the actual cores, and that the 
+information in the record tables is consistent with the core images and other relevant information. 
+10 Report preparation and data submission 
+10.1 Report preparation 
+Prepare the core image photography report or core true color image scanning report. See DD 2022-
+1.1,10.1 for the outline. 
+
+DD 2026—1.2 
+8 
+10.2 Data submission 
+The following data shall be submitted: 
+a) core surface image digitalization technical report (in paper and electronic), 
+b) dataset and its metadata containing the original image data and the processed image data by 
+image cropping or mosaic of the cores, and 
+c) various kinds of record tables (in paper and electronic) including the process record tables of 
+core surface image digitalization and the quality inspection record tables.  
+ 
+
+DD 2026—1.2 
+9 
+A 
+A  
+Annex A 
+(normative) 
+Core image photography record table 
+Core image photography record table is shown in Table A.1. 
+ 
+Table A.1— Core image photography record table 
+Project name 
+ 
+Project code 
+ 
+Organization 
+ 
+Photographer 
+ 
+Drill hole 
+(borehole) no. 
+ 
+Total boxes no 
+ 
+Camera model 
+ 
+Photography date 
+day/month/year 
+Serial no. 
+Core 
+box 
+no. 
+Image 
+name 
+Depth 
+m 
+Roundtrip footage 
+m 
+Core 
+length 
+cm 
+Core 
+diameter 
+cm 
+Lithology 
+Note 
+Starting 
+depth 
+Ending 
+depth 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Inspector 
+ 
+Inspection Date 
+day/month/year 
+Instructions: 
+1. The project name, project code, organization, photographer, drill hole no. and other information 
+shall be filled in accurately without abbreviation. 
+2. Total boxes no.: the total number of the core boxes in the drill hole (borehole). 
+3. Camera model: the model of the camera used for core image photography. 
+4. Core box no,: the serial number of the core box, generally composed of 3 Arabic numerals, for 
+example: the first box shall be filled in as “001”. 
+5. Image name: name the image according to the requirements in 7.1.3 of this document. 
+6. Starting and ending depth: the starting depth and ending depth of each box of cores, composed of 
+Arabic numerals, with two decimal places and in meters, such as "132.15". 
+7. Roundtrip footage: the difference between the ending depth and the starting depth of the core in 
+the box, composed of Arabic numerals, with two decimal places and in meters, such as "2.15". 
+8. Core length: the actual length of the core in the box, composed of Arabic numerals, with an integer 
+value and in centimeters, such as "320". 
+9. Core diameter: the diameter of the core, composed of Arabic numerals, with an integer value and 
+in centimeters. 
+10. Lithology: the attribute characteristics of each box of cores. 
+11. Note: the explanation for the special processing of certain core images. 
+
+DD 2026—1.2 
+10 
+Annex B 
+（normative） 
+Core true color image scanning record table 
+Core true color image scanning record table is shown in Table B.1. 
+ 
+Table B.1— Core true color image scanning record table 
+File name 
+ 
+File no. 
+ 
+Project name 
+ 
+Project code 
+ 
+Drill hole (borehole) no. 
+ 
+Scanning 
+technician 
+ 
+Organization 
+ 
+Light source 
+ 
+Scanning mode 
+ 
+Scanner model 
+ 
+Scanning date 
+day/month/year 
+Core box 
+no. 
+Compartment 
+no. 
+Image file 
+name 
+Roundtrip  
+Starting depth 
+m 
+Actual 
+length 
+cm 
+Note 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Inspector 
+ 
+Inspection Date 
+day/month/year 
+Instructions: 
+1. The file name, file no., project name, project code, drill hole no., scanning technician, organization, 
+and other information shall be filled in accurately according to the coding rules or naming rules 
+without abbreviation. 
+2. Light source: choose from white balance or fluorescence. 
+3. Scanning mode: choose from translational image scanning or rolling image scanning. 
+4. Scanner model: the model of the scanner. 
+5. Core box no.: the serial number of the core box, generally composed of 3 Arabic numerals, for 
+example: the first box shall be filled in as “001”. 
+6. Compartment no.: the number of the compartment, generally composed of 1 Arabic numeral, for 
+example: the first compartment shall be filled in as “1”. 
+7. Image file name of translational scanning: name the file according to the requirements in 7.2.3 of 
+this document. 
+8. Image file name of rolling scanning: name the file according to the requirements in 7.2.4 of this 
+document. 
+
+DD 2026—1.2 
+11 
+9. Roundtrip: the number of the core barrel, composed of Arabic numerals, for example: the fifth core 
+barrel shall be filled in as “5”. 
+10. Starting depth: the starting depth of the core corresponding to each core image, composed of 
+Arabic numerals, with two decimal places and in meters, such as "132.15". 
+11. Actual length: the actual length of the core corresponding to the core image, composed of Arabic 
+numerals, with an integer value and in centimeters, such as "32". 
+12. Note: the explanation for the special processing of certain core images. 
+ 
+
+DD 2026—1.2 
+12 
+Annex C 
+（normative） 
+Quality inspection record table 
+Quality inspection record table is shown in Table C.1. 
+ 
+Table C.1— Quality inspection record table 
+File no. 
+(or Project 
+code) 
+ 
+Drill hole (borehole) 
+no. 
+ 
+File name 
+(Project name) 
+ 
+Operator 
+ 
+Inspector 
+ 
+Inspection type 
+□Self-inspection         □Mutual inspection         □Sampling inspection 
+Photographing 
+/Scanning date 
+ 
+Inspection date 
+ 
+Data type 
+ 
+Inspection 
+aspects 
+Contents 
+Results 
+Data 
+completeness 
+check 
+whether all the record tables of core image 
+photography and core true color image 
+scanning are filled in completely and 
+accurately 
+Complete, accurate or XXX item(s) is (are) 
+wrong 
+whether all the original core images and the 
+processed core images by cropping or mosaic 
+are complete 
+All kinds of data are available or XXX data is 
+(are) missing 
+whether the image data acquiring by 
+photographing or scanning is complete 
+All the image data is complete or the core 
+images of XXX box are missing 
+Data 
+normalization 
+check 
+whether data collation and organization is 
+normative 
+Normative or the naming and organization of 
+XXX data  is not normative 
+whether the data naming is normative 
+Normative or the naming of XXX data folder 
+is not normative 
+Data accuracy 
+check 
+whether the core image is clear and real  
+Clear, real or the core images of XXX core box 
+are blurry, or distorted 
+whether the round-trip labels are clear after 
+capturing the images 
+Clear or the  round-trip labels of XXX core box 
+are blurry 
+whether the core images are consistent with 
+the information in the record tables  
+The information in the record tables 
+corresponds one-to-one with the core images 
+Data 
+rectification 
+ 
+
+DD 2026-1.2 
+13 
+Bibliography 
+[1]  GB/T 29298—2012  Digital still camera general specification 
+[2]  GB 50034—2013  Standard for lighting design of buildings 
+[3]  DZ/T 0078—2015  Procedures for original geological record of solid mineral exploration 
+[4]  JGJ/ 25-2000  Design Code for Archives Buildings 
+[5]  SY/T 6748—2008  Specification for cores scan of oil and gas wells  
+[6]  DD 2010—05 Technical requirements for the storage ＆ management of geological cores and 
+samples 
+[7] DZ/T 0441.1-2023 Code of practice for core digitalization - Part 2: Surface image digitalization 
+ 

@@ -1,0 +1,521 @@
+ 
+ 
+ 
+ 
+Technical 
+Standard 
+of 
+China 
+Geological 
+Survey 
+DD2026—1.1 
+ 
+ 
+ 
+ 
+ 
+Code of practice for core digitalization - Part 
+1 : General 
+ 
+岩心数字化技术规程 第1 部分：总则 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+China Geological Survey 
+July 2026 
+
+DD 2026—1.1 
+I 
+ 
+Contents 
+Foreword .................................................................................................................................................................. II 
+Introduction........................................................................................................................................................... III 
+1 Scope ....................................................................................................................................................................... 1 
+2 Normative references ....................................................................................................................................... 1 
+3 Terms and definitions ....................................................................................................................................... 1 
+4 Basic requirements ........................................................................................................................................... 2 
+4.1 Core classification and requirements ....................................................................................................................... 2 
+4.2 Core digitalization methods classification and requirements ........................................................................ 2 
+4.3 Core digitalization workflow........................................................................................................................................ 2 
+4.4 Data sharing and services .............................................................................................................................................. 2 
+5 Core digitalization method selection ...................................................................................................................... 2 
+5.1 Cores for mineral exploration ...................................................................................................................................... 2 
+5.2 Cores for oil & gas exploration .................................................................................................................................... 3 
+5.3 Cores for marine geology ............................................................................................................................................... 3 
+5.4 Cores for hydrogeology-engineering-environmental geology ....................................................................... 4 
+5.5 Cores for geoscience research ..................................................................................................................................... 4 
+5.6 Cores for other types ....................................................................................................................................................... 5 
+6 Preparation .......................................................................................................................................................... 5 
+6.1 Preparation on equipment, work site and operator .......................................................................................... 5 
+6.2 Preparation on cores ....................................................................................................................................................... 5 
+7 Digital data acquisition .................................................................................................................................... 6 
+8 Data collation ....................................................................................................................................................... 6 
+9 Quality inspection .............................................................................................................................................. 6 
+10 Report preparation and data submission ............................................................................................... 7 
+Annex A （normative） Basic information for drill hole (borehole).................................................. 8 
+Annex B （informative） Outline of core digitalization report ............................................................ 9 
+Bibliography ......................................................................................................................................................... 10 
+
+DD 2026—1.1 
+II 
+Foreword 
+China Geological Survey is in charge of this English translation. In case of any doubt about the contents 
+of English translation, the Chinese original shall be considered authoritative. 
+This document was drafted in accordance with the rules given in the GB/T 1.1-2020 Directives for 
+standardization—Part 1: Rules for the structure and drafting of standardizing documents. 
+This document is the first part of DD 2022-1 Code of practice for core digitalization. DD 2022-1 has been 
+issued three parts as follows: 
+——Part 1: General; 
+——Part 2: Surface image digitalization; 
+——Part 3: Spectral scanning. 
+This document was proposed and managed by China Geological Survey, Ministry of Natural Resources 
+of the People’s Republic of China. 
+This document was drafted by: The Cores and Samples Center of Natural Resources, China Geological 
+Survey, Tianjin Center, China Geological Survey, Nanjing Center, China Geological Survey, Oil and Gas 
+Survey Center, China Geological Survey, Shenyang Center, China Geological Survey, Beijing Jiutai Fude 
+Technology Co., Ltd., Beijing Dingtai Chuangke Technology Development Co., Ltd., Natural Resources 
+Information Center of Gansu Province, iRock Technologies Co. Ltd., Institute of Geology and Geophisices, 
+Chinese Academy of Sciences, Xizang Hengyu Jinxin Technology Co., Ltd., PetroChina Company Limited, 
+Sinopec Corp, China National Offshore Oil Corporation, and Shandong Provincial Lunan Geology and 
+Exploration Institute. 
+The major drafters are: Gao Pengxin, Shi Weixin, Li Jianguo, Wang Jiasong, Liu Hong, Hui Guangji, Zhang 
+Bo, Zhang Hong, Gao Qingnan, Guo Dongxu, Zhang Qiyan, Sun Huafeng, Li Qiuling, Xiu Liancun, Zhang 
+Cong, Liu Xiao, Ge Tianzhu, Li Dawei, Yuan Lihua, Yi Tianyu, Xie Guiqin, Feng Yongtai, Zhang Ying, He 
+Dawei, Guo Bin, Zhang Anzhen, Wu Guoqiang, Dong Hu, Yang Jijin, Zhou Jing, An Maoguo, and An 
+Yangsheng. 
+The main translation organizations of the English version of this document are: Cores and Samples 
+Center of Natural Resources, China Geological Survey and Tianjin Center, China Geological Survey. 
+The major translators of the English version of this document are: Hui Guangji, Li Qiuling, Gao Pengxin, 
+Wang Jiasong, Shi Weixin, Gao Qingnan, and Zhang Lei. 
+China Geological Survey, Ministry of Natural Resources of the People’s Republic of China is responsible 
+for the explanation of this document. 
+ 
+ 
+
+DD 2026—1.1 
+III 
+ 
+Introduction 
+Cores are the fundamental material for understanding underground geological information. The surface 
+and internal information of cores such as images, minerals, elements, structures, textures, and physical 
+properties can be obtained non-destructively (or micro-destructively), continuously, fast, and in high-
+resolution by core digitalization. By core digitalization, the digital data preservation and efficient 
+utilization of geological cores can be realized, which can provide technical services and data supports 
+for geological survey, mineral resources exploration, ecological environment assessment, geological 
+science research, and disaster prevention and mitigation, etc. DD 2022-1 is a series of basic and general 
+standards, which can be used as the guidance on core digitalization for the core storage organizations 
+and project undertakers. Considering the different working principles, methods, and requirements of 
+various types of core digitization technologies, DD 2022-1 is planned consist of the following seven parts 
+under the general title Code of practice for core digitalization: 
+——Part 1: General, which establishes the general principles and basic requirements for core 
+digitalization; 
+——Part 2: Surface image digitalization, which establishes operational, traceable and verifiable 
+procedures and requirements for core surface image acquisition; 
+——Part 3: Spectral scanning, which establishes operational, traceable and verifiable procedures and 
+requirements for collecting core spectral reflectance and mineral information; 
+——Part 4: X-ray fluorescence element, which establishes operational, traceable and verifiable 
+procedures and requirements for collecting core elemental information; 
+——Part 5: Multi-scale CT scanning, which establishes operational, traceable and verifiable procedures 
+and requirements for collecting core surface and internal structural information; 
+——Part 6: Micro-region scanning electron microscope imaging, which establishes operational, traceable 
+and verifiable procedures and requirements for collecting core micro-regional surface and internal 
+information about mineral, element and structure; 
+——Part 7: Physical parameters, which establishes operational, traceable and verifiable procedures and 
+requirements for collecting core physical information about resistivity, magnetic susceptibility, etc. 
+
+DD 2026—1.1 
+1 
+ 
+ 
+Code of practice for core digitalization - Part 1: General 
+1 Scope 
+This document specifies the core digitalization classification and methods selection, preparation 
+work, digital data acquisition, data processing and interpretation, data collation, quality inspection, 
+report preparation and data submission of core digitalization.  
+This document is applicable to digitalization work of cores drilled for mineral exploration, oil & gas 
+exploration, marine geology, hydrogeology-engineering-environmental geology, geoscience research 
+and other types of geological works. 
+2 Normative references 
+There are no normative references in this document. 
+3 Terms and definitions 
+For the purposes of this document, the following terms and definitions apply. 
+3.1  
+core 
+columnar rock sample drilled by drill bit 
+[SOURCE: GB/T 9151—1988, 13.1.1] 
+3.2 
+core digitalization 
+non-destructive (or micro-destructive) method used to acquire core surface and internal information 
+which includes images, minerals, structures, textures, and physical properties, using detective and 
+analysis technologies based on sound, optical, electric, magnetic, wave 
+3.3 
+core surface image digitalization 
+method used to obtain core surface images with digital camera or large core image scanning system 
+3.4 
+core spectral scanning 
+method used to obtain spectral data of core surface continuously with mechanical transmission 
+device and spectrometer, process data in depth correction, invalid data elimination, data 
+interpretation, and eventually produce spectral data and mineral information matched core depth 
+3.5 
+core digitalization for X-ray fluorescence element 
+method used to continuously obtain element types and concentrations on core surface at a certain 
+interval with X-ray fluorescence (XRF) analyzer 
+3.6 
+core multi-scale CT scanning 
+method used to scan the core with X-ray source computerized tomography (CT) equipment, process 
+and analyze the obtained projection data, obtain the core internal image based on the layer 
+information, and establish the core internal 3-D structure  
+ 
+ 
+
+DD 2026—1.1 
+2 
+3.7 
+core digitalization for micro-region scanning electron microscope imaging 
+method used to obtain high-resolution image of representative micro-regions of the core with 
+electron microscope and technologies such as backscattered electron imaging, secondary electron 
+microscopy, focused ion beam, and energy-dispersive spectroscopy, and extract information such as 
+minerals, elements, and structures by interpretation 
+3.8 
+core digitalization for physical parameters 
+method used to measure the physical properties of the core such as impedance, bulk reactance and 
+magnetic strength by using physical property measuring equipment, and obtain the information of 
+the resistivity, polarizability, magnetic susceptibility and density of the core 
+4 Basic requirements 
+4.1 Core classification and requirements 
+4.1.1 According to different geological works, cores are classified into different types, including 
+cores for mineral exploration, oil & gas exploration, marine geology, hydrogeology-engineering-
+environmental geology, geoscience research and other types.  
+4.1.2 Cores shall be preserved well in the field before digitalization. The cores with storage 
+acceptance of the archive buildings shall be packed during transportation. The cores which tend to 
+be weathered or fractured easily, shall be fixed to prevent any irreversible changes of core 
+composition, structure, order, etc. 
+4.1.3 Representative and typical cores which can reflect the features of the strata, lithology, 
+paleontology, structure, minerals, and other features of geological mass in the study area shall be 
+selected for digitalization. 
+4.2 Core digitalization methods classification and requirements 
+4.2.1 According to the information acquisition method, core digitalization methods is divided into 
+surface image digitalization, spectral scanning, X-ray fluorescence element analysis, multi-scale CT 
+scanning, micro-region scanning electron microscope imaging, physical parameters digitalization, 
+etc.  
+4.2.2 Digitalization methods shall be properly selected according to the purpose of core 
+digitalization. 
+4.2.3 Core digitalization workload and parameters including the interval of analysis spots, analysis 
+duration, etc. shall meet the requirements of the follow-up geological survey, mineral exploration, 
+and scientific research. 
+4.2.4 Generally, cores are digitalized in units of drill hole (borehole). One drill hole (borehole) is a 
+digitalization unit. 
+4.3 Core digitalization workflow 
+Core digitalization workflow consists of preparation work, digital data acquisition, data processing 
+and interpretation, data collation, quality inspection, report preparation and data submission. 
+4.4 Data sharing and services 
+Core digitalization data shall be named and organized uniformly to establish dataset and provide in-
+time services. 
+5 Core digitalization method selection 
+5.1 Cores for mineral exploration 
+
+DD 2026—1.1 
+3 
+ 
+5.1.1 Cores for mineral exploration refer to cores drilled from geological surveys, mineral 
+exploration, and exploitation of metallic and non-metallic deposits. 
+5.1.2 For the whole cores, surface image digitalization shall be conducted; for those cores from 
+important drill holes, important layers and key sections, spectral scanning and XRF measurement 
+shall also be conducted, and physical parameters such as resistivity, polarizability, magnetic 
+susceptibility, and micro-region scanning electron microscope imaging should be conducted. 
+5.1.3 Cores from important drill holes include but are not limited to 
+a) cores from representative drill holes in main exploration lines which can reflect the geological 
+characteristics of large-super large deposits of important minerals, 
+b) cores from representative drill holes in main exploration lines of deposits with special 
+significance which includes deposits with new genetic types, deposits with new minerals, and 
+typical deposits, and 
+c) cores from long drill holes (end depth not less than 2000 m) drilled during exploration in mining 
+area. 
+5.1.4  Cores from important layers and key sections include but are not limited to cores from 
+mineralization belts, alteration bands, top and bottom plate of orebody, and other mineralization-
+related sections. 
+5.2 Cores for oil & gas exploration 
+5.2.1 Cores for oil & gas exploration refer to cores drilled from geological survey, exploration, and 
+exploitation for conventional oil & gas and non-conventional shale oil, shale gas, gas hydrate, and 
+tight oil, coalbed methane, etc. 
+5.2.2 For the whole cores, surface image digitalization, spectral scanning and XRF measurement 
+shall be conducted; for those cores from important drill holes, important layers and key sections, 
+multi-scale CT scanning shall be conducted and physical parameters such as electrical resistivity, 
+polarizability, and micro-region scanning electron microscope imaging should be also conducted. For 
+cores from oil & gas reservoir sections which tend to be weathered or fractured easily, multi-scale 
+CT scanning and micro-region scanning electron microscope imaging shall be conducted before the 
+core sections are damaged. 
+5.2.3 Cores from important drill holes include but are not limited to cores from geological survey 
+drill holes, regional exploration drill holes, parameter drill holes and marine oil & gas drill holes. 
+Cores from important layers and key sections include but are not limited to cores from reservoir 
+sections, capstone sections and hydrocarbon-generating sections. 
+5.3 Cores for marine geology 
+5.3.1 Cores for marine geology refer to sediment samples and cores drilled from regional marine 
+geology survey, coastal geology survey, marine mineral resources survey, and marine geology survey 
+in deep sea or ocean. 
+5.3.2 When sediment samples get split for other analysis, surface image digitalization shall be 
+conducted for split sediment samples, whilst the XRF and physical parameters measurement 
+including electrical resistivity and magnetic susceptibility should be carried out at the same time. For 
+the whole cores, surface image digitalization, spectral scanning, and XRF measurement shall be 
+conducted, and physical parameters measurement such as electrical resistivity and magnetic 
+susceptibility should be carried out; for important sediment samples and cores from important drill 
+holes, important layers and key sections, multi-scale CT scanning may be conducted when necessary.  
+
+DD 2026—1.1 
+4 
+5.3.3 Important sediment samples and cores from important drill holes include but are not limited 
+to  
+a) sediment samples and cores from drill holes drilled in regional marine geology survey, 
+b) representative sediment samples and cores from representative drill holes drilled in coastal 
+geology survey, 
+c) representative sediment samples and cores from representative drill holes drilled in marine 
+mineral resources survey, and 
+d) sediment samples and cores from drill holes drilled during marine geology survey in deep sea or 
+ocean. 
+5.3.4 Cores from important layers and key sections include but are not limited to cores from 
+enrichment layers and layers involved in important geological environmental events. 
+5.4 Cores for hydrogeology-engineering-environmental geology  
+5.4.1 Cores for hydrogeology-engineering-environmental geology refer to cores drilled from 
+hydrogeology-engineering-environmental geology, hazard geology, and urban geology works. 
+5.4.2 Cores from important drill holes include but are not limited to 
+a) cores from representative drill holes from hydrogeology exploration of large groundwater source 
+field, 
+b) cores from drill holes which represent major geological environmental evolution and 
+environmental events and reflect the obvious comparison.  
+c) cores from representative bedrock standard and stratification standard from ground subsidence 
+exploration, 
+d) cores from representative drill holes or long drill holes from important hot dry rock or 
+geothermal exploration. 
+5.4.3 Cores from important layers and key sections include but are not limited to cores from layers 
+and sections in main tectonic belts, bearing layers, aquifers, geothermal resource occurrence layers, 
+major environmental events occurrence layers, and cores with special significance to the hydrology-
+engineering-environmental geology in working areas. 
+5.4.4 For the whole cores, surface image digitalization shall be conducted; for cores from long drill 
+holes and special drill holes from engineering geology exploration of major projects, spectral 
+scanning and XRF measurement of the whole cores should be carried out at the same time and multi-
+scale CT scanning of representative core sections may also be conducted when necessary. For cores 
+from other important drill holes, important layers and key sections, spectral scanning and XRF 
+measurement may be conducted when necessary. 
+5.5 Cores for geoscience research 
+5.5.1 Cores for geoscience research refer to cores drilled from scientific research, polar research, 
+astrogeology research, and deep geology research. 
+5.5.2 For the whole cores, surface image digitalization, spectral scanning, XRF and physical 
+parameters measurement including electrical resistivity and magnetic susceptibility shall be 
+conducted; for those cores from important layers and key sections, multi-scale CT scanning and 
+micro-region scanning electron microscope imaging should be conducted at the same time. 
+5.5.3 Cores from important layers and key sections include but are not limited to cores in layers 
+and sections such as mark layers, contact boundaries, resource enrichment sections for scientific 
+research. 
+
+DD 2026—1.1 
+5 
+ 
+5.6 Cores for other types 
+5.6.1 Cores for other types refer to cores drilled from other geology work including regional 
+geology survey and natural resources survey, etc. 
+5.6.2 Surface image digitalization, spectral scanning, XRF measurement and other types of 
+digitalization may be conducted when necessary, needed by digital preservation, scientific research 
+or public services of cores.  
+6  Preparation 
+6.1 Preparation on equipment, work site and operator 
+6.1.1 Large-scale core scanning equipment should be given preference to core digitalization. 
+Portable devices may be used if the large-scale equipment is not available. All the equipment shall be 
+verified or calibrated. 
+6.1.2 The core digitalization work sites shall be clean, flat, spacious, and isolated from corrosive 
+gases, without the interruption of dust and noise. Light, temperature and humidity shall meet the 
+requirements of the equipment operation. 
+6.1.3 The operators shall possess a certain amount of geological knowledge and be trained to 
+operate the equipment. The suits shall meet the requirements of safety and cannot interfere with the 
+equipment. 
+6.2 Preparation on cores 
+6.2.1 Place the core boxes in the order of depth from the top to the bottom successively. Make sure 
+the axle of the core is basically in line. Rotate the core to make the marked surface downward. Place 
+marked core labeling boards at sides of the box and place them back after digitalization. 
+6.2.2 If the surface height of core sections is inconsistent, the core sections with lower height shall 
+be uplifted to make all the core sections are at the same level to eliminate the disturbance caused by 
+the inconsistency.  
+6.2.3 Cores with dust, mud, and other materials shall be cleaned depending on their features as 
+follows, 
+a) generally, clean water should be used to wash the cores without damaging their original 
+condition. Handle the cores carefully not to damage the labels and notes on the surface while 
+cleaning. Dry the cores naturally after cleaning, 
+b) for crushing cores, and cores containing water-soluble or clay minerals, soft brush and jet air 
+shall be used to remove the dust on the surface and dry rags shall be used to clean the core surface, 
+c) for oily cores, and cores from oil-based drilling fluid coring and sealed coring drill holes, non-
+metal scrapers or cotton yarn shall be used to clean them, and 
+d) split the cores which cannot be cleaned with bad contamination or damage and digitalize the 
+new surface. 
+6.2.4 The wooden bars or foam bars of the same length shall be placed at the missing core sections. 
+The depth information of missing core sections shall be marked on the surface. Sediment cores for 
+microbiological and organic analysis shall be refrigerated or frozen. Digitalization shall be completed 
+as soon as possible to prevent obvious thawing caused by prolonged exposure. 
+ 
+
+DD 2026—1.1 
+6 
+7 Digital data acquisition  
+7.1 Before the data acquisition, the drill hole (borehole) basic information table shall be filled in, 
+as specified in Annex A.  
+7.2 In the process of the data acquisition, data shall be monitored in real time. The abnormal issues 
+shall be solved in time before resuming the digitalization. For details, see other parts of DD 2022-1.  
+7.3 Cores shall be stored properly after placing them and their labelling boards back to the original 
+place after digitalization. 
+7.4 After data acquisition, data processing shall be conducted, which includes but is not limited to 
+image correction, image clipping and stitching, invalid data elimination. Data interpretation may be 
+carried out if necessary. For details, see other parts of DD 2022-1. 
+7.5 After data acquisition, the data shall be transformed into uniform format as required. For 
+details, see other parts of DD 2022-1. 
+8 Data collation 
+8.1 Establish three-level folders for core digital data collation. Data files shall be saved in 
+corresponding folders. 
+8.2 Level 1 folders are named as "project code _ English abbreviation of data type". Level 2 folders 
+are named as "drill hole (borehole) code or placeholder _English abbreviation of data type". 
+8.3 Level 3 folders consist of folders for original data, processed data and interpreted data based 
+on process levels of data. Folders for original data are named as “drill hole (borehole) code or 
+placeholder_L0_ English abbreviation of data type”. Folders for processed data are named as “drill 
+hole (borehole) code_L1_ English abbreviation of data type”. Folders for interpreted data are named 
+as “drill hole (borehole) code or placeholder _L2_ English abbreviation of data type”.  
+8.4 The English abbreviation of core surface images is “IMG”, of spectral scanning data is “SPE”, of 
+core X-ray fluorescence data is “XRF”, of core multi-scale CT structure data is “MCT”, of micro-region 
+scanning electron microscope images is “SEM”, and of core physical parameter data is “PHY”.  
+8.5 All the data and records generated in core digitalization shall be backed up in at least 3 
+different kinds of storage devices.  
+9 Quality inspection 
+9.1 All the data generated in core digitalization shall be inspected. The self-inspection and mutual-
+inspection rate shall be up to 100%, and the sampling inspection rate shall not be less than 10%. The 
+inspection rate may be raised according to the requirements of different digitalization methods. 
+9.2 Completeness, normalization and accuracy of the data are checked as follows, 
+a) completeness refers to whether all mandatory data is complete, whether each data is intact, and 
+whether there’s data missing or damage, 
+b) normalization refers to whether the format, naming and organization of data is normative, and 
+c) accuracy refers to whether the data could reflect the real condition of the cores. 
+9.3 Record all quality issues exactly. Analyze and eliminate the causes of these issues in time. 
+Digitalize cores again if necessary.  
+
+DD 2026—1.1 
+7 
+ 
+10 Report preparation and data submission 
+10.1 Core digitalization report shall be prepared after digitalization. Relevant information, see 
+Annex B. The outline may be modified according to the requirements of different digitalization 
+methods. 
+10.2 Core digital data along with record tables and core digitalization reports shall be submitted, 
+listed as follows, 
+a) core digitalization technical report (in paper and electronic), 
+b) dataset and metadata including the original data, processed data and interpreted data, and 
+c) all kinds of record tables (in paper and electronic) containing core digitalization process records 
+and quality inspection records. 
+
+DD 2026—1.1 
+8 
+A 
+ 
+Annex A 
+（normative） 
+Basic information for drill hole (borehole) 
+Basic information for drill hole (borehole) is shown in Table A.1. 
+ 
+Table A.1—Basic information for drill hole (borehole)  
+File number 
+ 
+Project name 
+ 
+Project code 
+ 
+Drill hole (borehole) code or 
+placeholder 
+ 
+Drill hole (borehole) location 
+Longitude: 
+Latitude: 
+Elevation: 
+Dip angle 
+° 
+Azimuth 
+° 
+Drilling starts on 
+day/month/year 
+Drilling ends on 
+day/month/year 
+Cores type 
+ 
+Final depth  
+m 
+Total length of core 
+m 
+Diameter of core  
+mm 
+Storage 
+organiza
+tion 
+Organization name 
+ 
+Location of the 
+warehouse 
+ 
+Drill hole (borehole) storage 
+condition 
+□ Good 
+□ Average 
+□ Slightly damaged 
+□ Badly Damaged 
+Contact 
+details 
+Contactor 
+ 
+Phone number 
+ 
+Recorder: 
+ 
+Date: 
+ 
+ 
+
+DD 2026—1.1 
+9 
+ 
+Annex B 
+（informative） 
+Outline of core digitalization report 
+B.1 Chapter 1 Introduction 
+Brief introduction to the core digitalization, including the organization, date, technicians, objectives 
+and tasks, etc.  
+B.2 Chapter 2 Introduction to study area and drill hole (borehole) 
+B.2.1 Section 2.1 Working area 
+The scope and geology of the working area. The strata, magmatite, structure and mineral resources 
+in the study area. Administrative divisions shall be filled in up to the provincial, municipal (district) 
+and county levels, and the coordinates of the working area shall be indicated. 
+B.2.2 Section 2.2 Basic information of drill hole (borehole) 
+Basic information of drill hole (borehole), including name, final depth, total length for core, number 
+of the affiliated exploration line and representativeness of the core, etc.  
+B.3 Chapter 3 Methodology 
+Brief introduction to digitalization method selection, instruments and its performance, quality 
+control, etc.  
+B.4 Chapter 4 Summary  
+B.4.1 Section 4.1 Achievements 
+Brief introduction to achievements in data acquisition, process, interpretation and other tasks.  
+B.4.2 Section 4.2 conclusions and suggestions 
+Brief introduction to the conclusions derived from core digitalization and suggestions for further 
+work.  
+B.5 Chapter 5 Data submission 
+Introduction to submitted core digital data, table records, reports, etc. 
+ 
+
+DD 2026—1.1 
+10 
+Bibliography 
+[1]  GB/T 9151—1988 Terms of drilling engineering 
+[2]  DZ/T 0385—2021 Technical requirements of physical geological data sorting  
+[3]  DD 2010—5 Technical requirements for collection management of cores and samples 
+[4]  DZ/T 0441.1—2023 Code of practice for core digitalization - Part 1 : General 
+ 

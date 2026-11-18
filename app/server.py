@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Tiny local API + static server for the core database demo."""
+"""Local API + static server for the core database platform."""
 import argparse
 import json
 import mimetypes
@@ -106,14 +106,21 @@ def enrich_images(conn, items):
 # ---------------------------------------------------------------- APIs
 def api_overview(conn):
     meta = {r["key"]: r["value"] for r in conn.execute("SELECT * FROM meta")}
+    totals = one(conn, """SELECT COUNT(*) wells,
+        COALESCE(SUM(inventory),0) inventory_m,
+        COALESCE(SUM(cuttings),0) cuttings_bags,
+        COALESCE(SUM(sidewall),0) sidewall_pcs,
+        COALESCE(AVG(coverage),0) coverage,
+        COALESCE(SUM(scanned),0) scanned_m
+        FROM wells WHERE deleted_at IS NULL""")
     kpi = {
-        "inventory_m": float(meta.get("inventory_m", 0)),
-        "cuttings_bags": int(float(meta.get("cuttings_bags", 0))),
-        "sidewall_pcs": int(float(meta.get("sidewall_pcs", 0))),
-        "coverage": float(meta.get("coverage", 0)),
-        "scanned_m": float(meta.get("scanned_m", 0)),
-        "total_wells": int(float(meta.get("total_wells", 0))),
-        "images": int(float(meta.get("images", 0))),
+        "inventory_m": float(totals["inventory_m"] or 0),
+        "cuttings_bags": int(totals["cuttings_bags"] or 0),
+        "sidewall_pcs": int(totals["sidewall_pcs"] or 0),
+        "coverage": float(totals["coverage"] or 0),
+        "scanned_m": float(totals["scanned_m"] or 0),
+        "total_wells": int(totals["wells"] or 0),
+        "images": one(conn, "SELECT COUNT(*) c FROM images WHERE deleted_at IS NULL")["c"],
         "today_scans": int(float(meta.get("today_scans", 0))),
         "updated_at": meta.get("updated_at", ""),
     }
@@ -137,8 +144,10 @@ def api_overview(conn):
     return {
         "kpi": kpi,
         "scan_by_well": scan_by_well,
-        "cuttings_by_region": json.loads(meta.get("cuttings_by_region", "[]")),
-        "inventory_by_region": json.loads(meta.get("inventory_by_region", "[]")),
+        "cuttings_by_region": [[r["region"], r["value"]] for r in rows(conn, """SELECT region, COALESCE(SUM(cuttings),0) value
+            FROM wells WHERE deleted_at IS NULL GROUP BY region ORDER BY value DESC""")],
+        "inventory_by_region": [[r["region"], r["value"]] for r in rows(conn, """SELECT region, COALESCE(SUM(inventory),0) value
+            FROM wells WHERE deleted_at IS NULL GROUP BY region ORDER BY value DESC""")],
         "latest": latest,
         "map_points": map_points,
         "todos": todos,
@@ -230,6 +239,23 @@ def api_well_detail(conn, wid):
             WHERE r.well_id=? AND cp.deleted_at IS NULL AND r.deleted_at IS NULL
             ORDER BY r.run_no""", (wid,)),
     }
+    dict_map = {(r["dict_type"], r["code"]): r["name"]
+                for r in conn.execute("SELECT dict_type, code, name FROM dictionary")}
+    obs_map = [("structure_code", "structure", "structure_name"),
+               ("sedimentary_structure_code", "sedimentary_structure", "sedimentary_structure_name"),
+               ("contact_relation_code", "contact", "contact_relation_name"),
+               ("gas_show_code", "gas_show", "gas_show_name"),
+               ("breakage_wear_code", "breakage_wear", "breakage_wear_name")]
+    for o in core["observations"]:
+        for code_field, dict_type, name_field in obs_map:
+            o[name_field] = dict_map.get((dict_type, o.get(code_field)), o.get(code_field))
+        o["fossil_name"] = dict_map.get(("fossil", o.get("fossil_desc")), o.get("fossil_desc"))
+    for f in core["fractures"]:
+        f["type_name"] = dict_map.get(("fracture_type", f.get("type_code")), f.get("type_code"))
+        f["fill_name"] = dict_map.get(("fill", f.get("fill_code")), f.get("fill_code"))
+    for v in core["vugs"]:
+        v["type_name"] = dict_map.get(("vug_type", v.get("type_code")), v.get("type_code"))
+        v["fill_name"] = dict_map.get(("fill", v.get("fill_code")), v.get("fill_code"))
     return {"well": well, "runs": runs, "images": images, "experiments": experiments,
             "inventory": inventory, "products": prods, "core": core}
 
@@ -381,7 +407,7 @@ def post_txn(conn, body, actor="system"):
 
 # ---------------------------------------------------------------- HTTP
 class Handler(BaseHTTPRequestHandler):
-    server_version = "CoreDemo/1.0"
+    server_version = "CoreLab/1.0"
 
     def log_message(self, fmt, *args):
         sys.stderr.write("%s - %s\n" % (self.address_string(), fmt % args))
@@ -581,14 +607,14 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Core database demo server")
+    parser = argparse.ArgumentParser(description="Core database server")
     parser.add_argument("--port", type=int, default=PORT)
     args = parser.parse_args()
     if not is_postgres() and not DB_PATH.exists():
         print("database not found, run: python app/seed.py")
         sys.exit(1)
     server = ThreadingHTTPServer(("127.0.0.1", args.port), Handler)
-    print(f"Core demo running at http://127.0.0.1:{args.port}")
+    print(f"Core platform running at http://127.0.0.1:{args.port}")
     server.serve_forever()
 
 

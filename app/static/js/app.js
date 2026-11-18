@@ -121,4 +121,4 @@ if (document.readyState === "loading") {
   init();
 }
 
-window.coreDemo = { go: (h) => location.hash = h, toast, refreshMe };
+window.corePlatform = { go: (h) => location.hash = h, toast, refreshMe };

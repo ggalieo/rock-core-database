@@ -9,6 +9,11 @@ const loading = (text = "正在加载数据") =>
 
 const empty = (text = "暂无数据") => `<div class="empty">${text}</div>`;
 
+const IMAGE_TYPE_LABELS = {
+  SURFACE: "外表皮", ROLLED: "展开图", FLUORESCENCE: "荧光", BOX: "岩心箱", THIN_SECTION: "薄片",
+};
+const imageTypeLabel = (t) => IMAGE_TYPE_LABELS[t] || t || "—";
+
 function productCell(status) {
   return status === "done"
     ? `<span class="status-dot cell ok" title="已生成">✓</span>`
@@ -60,29 +65,29 @@ export async function home() {
         <div class="pulse-item accent">
           <div class="pulse-label">库存岩心</div>
           <div class="pulse-value">${fmt(k.inventory_m, 2)}<em>m</em></div>
-          <div class="pulse-meta">全库 <b>${k.total_wells}</b> 口井 · 较上月 +1.8%</div>
+          <div class="pulse-meta">当前库 <b>${k.total_wells}</b> 口井</div>
           <svg class="pulse-spark" viewBox="0 0 76 26"><polyline points="0,21 12,18 24,19 36,12 48,14 60,7 76,9" fill="none" stroke="#0e7490" stroke-width="1.5"></polyline></svg>
         </div>
         <div class="pulse-item">
           <div class="pulse-label">库存岩屑</div>
           <div class="pulse-value">${fmtInt(k.cuttings_bags)}<em>包</em></div>
-          <div class="pulse-meta">来自 <b>13</b> 个区块 · 本月新增 84 包</div>
+          <div class="pulse-meta">按区块汇总</div>
         </div>
         <div class="pulse-item">
           <div class="pulse-label">库存井壁</div>
           <div class="pulse-value">${fmtInt(k.sidewall_pcs)}<em>颗</em></div>
-          <div class="pulse-meta">覆盖 <b>6</b> 口重点井 · 全部已编目</div>
+          <div class="pulse-meta">已编目井壁取心</div>
         </div>
         <div class="pulse-item">
           <div class="pulse-label">扫描覆盖率</div>
           <div class="pulse-value">${fmt(k.coverage, 0)}<em>%</em></div>
-          <div class="pulse-meta">累计 <b>${fmt(k.scanned_m, 0)} m</b> · 待扫 4 口</div>
+          <div class="pulse-meta">累计 <b>${fmt(k.scanned_m, 0)} m</b> · 待扫描 <b>${todos.pending || 0}</b> 口</div>
         </div>
       </div>
 
       <div class="overview-grid">
         <section class="panel map-card">
-          <div class="panel-hd"><span class="bar"></span><h3>井位与扫描覆盖</h3><span class="hd-sub">WELL MAP · 15 口示范井 / 386 口全库</span></div>
+          <div class="panel-hd"><span class="bar"></span><h3>井位与扫描覆盖</h3><span class="hd-sub">WELL MAP</span></div>
           <div class="panel-bd">
             <div class="map-wrap"></div>
             <div class="map-overlay"><span class="chip on">全国</span><span class="chip">覆盖率着色</span></div>
@@ -162,7 +167,6 @@ export async function wells() {
       </div>
       <div class="sh-actions">
         <button class="btn ghost" id="exportWells">导出清单</button>
-        <button class="btn primary" id="addWell" title="统一在数据录入中新增井">＋ 新增井</button>
       </div>
     </div>
     <div class="explorer">
@@ -321,10 +325,19 @@ export async function wells() {
     const t = e.target.closest("[data-id]");
     if (t) go(`#/well/${t.dataset.id}`);
   });
-  document.getElementById("addWell").addEventListener("click", () => {
-    location.hash = "#/entry?entity=well";
+  document.getElementById("exportWells").addEventListener("click", () => {
+    const items = (lastData && lastData.items) || [];
+    if (!items.length) { toast("暂无可导出的井", "error"); return; }
+    const head = ["井号", "井名", "区块", "构造", "年份", "井别", "扫描状态", "库存(m)", "覆盖率(%)"];
+    const escCsv = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
+    const lines = [head.join(","), ...items.map((x) => [x.code, x.name, x.region, x.tectonic, x.year, x.type, x.status, x.inventory, x.coverage].map(escCsv).join(","))];
+    const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "well_list.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
   });
-  document.getElementById("exportWells").addEventListener("click", () => toast("已生成井清单导出任务（演示）", "ok"));
   await load(page);
 }
 
@@ -459,20 +472,20 @@ export async function well(id) {
       "<th>段号</th><th>井段(m)</th><th>收获率</th><th>岩性</th><th>结构</th><th>构造</th><th>接触</th><th>化石</th><th>倾角</th><th>荧光</th><th>含油</th><th>含气</th><th>破碎/磨损</th>",
       (x) => `<td>${esc(x.section_no)}</td><td class="num">${fmt(x.top_md,2)}—${fmt(x.bottom_md,2)}</td>
         <td class="num">${x.recovery == null ? "—" : (x.recovery * 100).toFixed(1) + "%"}</td><td>${esc(x.lithology)}</td>
-        <td>${esc(x.structure_code)}</td><td>${esc(x.sedimentary_structure_code)}</td>
-        <td>${esc(x.contact_relation_code)}</td><td title="${esc(x.fossil_desc)}">${esc((x.fossil_desc || "—").slice(0, 14))}</td>
+        <td>${esc(x.structure_name || x.structure_code)}</td><td>${esc(x.sedimentary_structure_name || x.sedimentary_structure_code)}</td>
+        <td>${esc(x.contact_relation_name || x.contact_relation_code)}</td><td title="${esc(x.fossil_desc)}">${esc((x.fossil_name || x.fossil_desc || "—").slice(0, 14))}</td>
         <td class="num">${fmt(x.dip_angle,1)}</td><td>${esc(x.fluorescence)}</td><td>${esc(x.oil_show)}</td>
-        <td>${esc(x.gas_show_code)}</td><td>${esc(x.breakage_wear_code)}</td>`, "observation")}
+        <td>${esc(x.gas_show_name || x.gas_show_code)}</td><td>${esc(x.breakage_wear_name || x.breakage_wear_code)}</td>`, "observation")}
     ${tbl("裂缝", core.fractures || [],
       "<th>段号</th><th>编号</th><th>类型</th><th>倾角</th><th>走向</th><th>长度(mm)</th><th>宽度(mm)</th><th>充填</th>",
-      (x) => `<td>${esc(x.section_no)}</td><td>${esc(x.fracture_no)}</td><td>${esc(x.type_code)}</td>
+      (x) => `<td>${esc(x.section_no)}</td><td>${esc(x.fracture_no)}</td><td>${esc(x.type_name || x.type_code)}</td>
         <td class="num">${fmt(x.dip_angle,1)}</td><td class="num">${fmt(x.strike_angle,1)}</td>
-        <td class="num">${fmt(x.length_mm,1)}</td><td class="num">${fmt(x.width_mm,2)}</td><td>${esc(x.fill_code)}</td>`, "fracture")}
+        <td class="num">${fmt(x.length_mm,1)}</td><td class="num">${fmt(x.width_mm,2)}</td><td>${esc(x.fill_name || x.fill_code)}</td>`, "fracture")}
     ${tbl("孔洞", core.vugs || [],
       "<th>段号</th><th>编号</th><th>类型</th><th>尺寸(mm)</th><th>面积(mm²)</th><th>面孔率%</th><th>充填</th>",
-      (x) => `<td>${esc(x.section_no)}</td><td>${esc(x.vug_no)}</td><td>${esc(x.type_code)}</td>
+      (x) => `<td>${esc(x.section_no)}</td><td>${esc(x.vug_no)}</td><td>${esc(x.type_name || x.type_code)}</td>
         <td class="num">${fmt(x.size_mm,2)}</td><td class="num">${fmt(x.area_mm2,2)}</td>
-        <td class="num">${fmt(x.area_pct,2)}</td><td>${esc(x.fill_code)}</td>`, "vug")}
+        <td class="num">${fmt(x.area_pct,2)}</td><td>${esc(x.fill_name || x.fill_code)}</td>`, "vug")}
     ${tbl("井壁取心", core.sidewalls || [],
       "<th>样品号</th><th>深度(m)</th><th>岩性</th><th>含油</th><th>荧光</th><th>分析摘要</th>",
       (x) => `<td>${esc(x.sample_no)}</td><td class="num">${fmt(x.depth_md,2)}</td><td>${esc(x.lithology)}</td>
@@ -525,9 +538,7 @@ export async function well(id) {
     if (btn) btn.click();
   }
 
-  function imageTypeName(t) {
-    return { SURFACE: "外表皮", ROLLED: "展开图", FLUORESCENCE: "荧光", BOX: "岩心箱", THIN_SECTION: "薄片" }[t] || t;
-  }
+  function imageTypeName(t) { return imageTypeLabel(t); }
 }
 
 function columnHtml(w, run) {
@@ -694,7 +705,7 @@ export async function mapPage() {
   el.innerHTML = `
     <div class="section-head" style="margin-bottom:12px">
       <div class="sh-sub">全国井位与扫描覆盖；点击井位进入井档案</div>
-      <div class="sh-actions"><span class="badge-soft">共 ${pts.length} 口示范井</span></div>
+      <div class="sh-actions"><span class="badge-soft">共 ${pts.length} 口井</span></div>
     </div>
     <div style="display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px">
       <section class="panel map-panel" style="height:720px">
@@ -810,8 +821,8 @@ export async function stats() {
       <div class="sh-sub">区域覆盖率 / 岩性分布 / 实验类型 / 库存状态</div>
     </div>
     <div class="inv-cards">
-      <div class="inv-card"><b>${totalWells}</b><span>示范井数</span></div>
-      <div class="inv-card"><b>${fmt(totalInv, 1)}</b><span>示范井库存（m）</span></div>
+      <div class="inv-card"><b>${totalWells}</b><span>井数</span></div>
+      <div class="inv-card"><b>${fmt(totalInv, 1)}</b><span>库存岩心（m）</span></div>
       <div class="inv-card"><b>${d.exp.reduce((s, x) => s + x.c, 0)}</b><span>实验项次</span></div>
       <div class="inv-card"><b>${d.lith.length}</b><span>岩性类型</span></div>
     </div>
@@ -852,7 +863,6 @@ export async function login() {
       <div class="entry-actions"><button class="btn" type="submit" id="loginBtn">登录</button><a class="btn ghost" href="#/home">返回总览</a></div>
       <div class="entry-msg err" id="loginMsg"></div>
     </form>
-    <div class="login-demo">演示账号：admin / admin123（管理员）· zhangwei / editor123（录入）· chenjing / viewer123（只读）</div>
   </div></div>`;
   const form = document.getElementById("loginForm");
   form.addEventListener("submit", async (e) => {
@@ -866,7 +876,7 @@ export async function login() {
         password: document.getElementById("loginPassword").value,
       }) });
       toast(`欢迎，${r.user.name}`, "ok");
-      if (window.coreDemo && window.coreDemo.refreshMe) await window.coreDemo.refreshMe();
+      if (window.corePlatform && window.corePlatform.refreshMe) await window.corePlatform.refreshMe();
       location.hash = next;
     } catch (err) {
       msg.textContent = err.message || "登录失败";
@@ -878,7 +888,7 @@ export async function login() {
 
 export async function logout() {
   try { await api("/api/auth/logout", { method: "POST", body: "{}" }); } catch (e) {}
-  if (window.coreDemo && window.coreDemo.refreshMe) await window.coreDemo.refreshMe();
+  if (window.corePlatform && window.corePlatform.refreshMe) await window.corePlatform.refreshMe();
   toast("已退出登录", "ok");
   location.hash = "#/home";
 }
@@ -927,16 +937,20 @@ export async function entry() {
     const id = `ef_${f.name}`;
     const req = f.required ? " required" : "";
     const wide = f.wide ? " wide" : "";
+    const ph = String(f.placeholder || "").startsWith("例如") ? "" : (f.placeholder || "");
     let inner = "";
     if (f.type === "select") {
-      const opts = optList(f).map((o) => `<option value="${esc(o.value)}">${esc(o.label)}</option>`).join("");
+      const opts = optList(f).map((o) => {
+        const label = (f.name === "type" && current === "image") ? imageTypeLabel(o.value) : o.label;
+        return `<option value="${esc(o.value)}">${esc(label)}</option>`;
+      }).join("");
       inner = `<select class="select" id="${id}" name="${esc(f.name)}"${req}><option value="">请选择</option>${opts}</select>`;
     } else if (f.type === "textarea") {
-      inner = `<textarea class="input" id="${id}" name="${esc(f.name)}" rows="3"${req} placeholder="${esc(f.placeholder || "")}"></textarea>`;
+      inner = `<textarea class="input" id="${id}" name="${esc(f.name)}" rows="3"${req} placeholder="${esc(ph)}"></textarea>`;
     } else {
       const typ = f.type === "number" || f.type === "int" ? "number" : f.type === "date" ? "date" : "text";
       const step = typ === "number" ? ' step="any"' : "";
-      inner = `<input class="input" id="${id}" name="${esc(f.name)}" type="${typ}"${step}${req} placeholder="${esc(f.placeholder || "")}" autocomplete="off">`;
+      inner = `<input class="input" id="${id}" name="${esc(f.name)}" type="${typ}"${step}${req} placeholder="${esc(ph)}" autocomplete="off">`;
     }
     return `<div class="entry-field${wide}">
       <label for="${id}">${esc(f.label)}${f.required ? '<span class="req">*</span>' : ""}</label>
@@ -961,6 +975,14 @@ export async function entry() {
     }
   };
 
+  const refLabel = (name, value) => {
+    if (value == null || value === "") return "—";
+    const map = { well_id: "wells", run_id: "runs", section_id: "sections", sample_id: "samples", sidewall_id: "sidewalls" };
+    const list = meta.options[map[name]] || [];
+    const hit = list.find((x) => String(x.id) === String(value));
+    return hit ? (hit.label || hit.code || hit.sample_no || String(value)) : String(value);
+  };
+
   const renderManager = async (key) => {
     const box = document.getElementById("entryManager");
     if (!box) return;
@@ -975,7 +997,9 @@ export async function entry() {
         <td>${r.id}</td>
         ${(d.fields || []).filter((f) => f.name !== "id").map((f) => {
           const raw = r[f.name];
-          const text = raw == null || raw === "" ? "—" : String(raw);
+          let text = raw == null || raw === "" ? "—" : String(raw);
+          if (key === "image" && f.name === "type") text = imageTypeLabel(raw);
+          else if (["well_id", "run_id", "section_id", "sample_id", "sidewall_id"].includes(f.name)) text = refLabel(f.name, raw);
           return `<td title="${esc(text)}">${esc(text.length > 36 ? text.slice(0, 36) + "…" : text)}</td>`;
         }).join("")}
         <td class="entry-actions-cell">
@@ -1085,11 +1109,10 @@ export async function entry() {
       <div class="entry-head"><h2>${esc(ent.icon)} ${esc(ent.label)}</h2><p>${esc(ent.desc || "")}</p></div>
       <form id="entryForm" novalidate>
         <div class="entry-grid">${(ent.fields || []).map(control).join("")}</div>
-        <div class="entry-field wide"><label>影像文件<span class="req">*</span></label><input class="input" type="file" id="imageFile" accept="image/jpeg,image/png,image/webp"><span class="hint">JPG / PNG / WebP，最大 12 MB；自动生成缩略图，配置 MinIO 时同步上传。</span></div>
+        <div class="entry-field wide"><label>影像文件<span class="req">*</span></label><input class="input" type="file" id="imageFile" accept="image/jpeg,image/png,image/webp"><span class="hint">支持 JPG / PNG / WebP，最大 12 MB；自动生成缩略图并归档。</span></div>
         <div class="entry-actions">
           <button class="btn" type="submit" id="entrySave">上传影像</button>
           <button class="btn ghost" type="reset">清空</button>
-          <span class="hint">上传后可在岩心影像中查看</span>
         </div>
         <div class="entry-msg" id="entryMsg"></div>
       </form>
@@ -1149,7 +1172,7 @@ export async function entry() {
         <div class="entry-actions">
           <button class="btn" type="submit" id="entrySave">${state.editingId ? "更新记录" : "保存到数据库"}</button>
           ${state.editingId ? '<button class="btn ghost" type="button" id="entryCancel">取消编辑</button>' : '<button class="btn ghost" type="reset">清空</button>'}
-          <span class="hint">带 * 为必填；保存后列表与下拉选项会刷新</span>
+          <span class="hint">带 * 为必填</span>
         </div>
         <div class="entry-msg" id="entryMsg">${state.editingId ? `正在编辑 #${state.editingId}` : ""}</div>
       </form>
@@ -1202,7 +1225,7 @@ export async function entry() {
 
   el.innerHTML = `
     <div class="section-head" style="margin-bottom:12px">
-      <div class="sh-sub">新增、编辑、删除、Excel 批量导入；所有写入都会进入 SQLite / PostgreSQL 主库</div>
+      <div class="sh-sub">数据录入与维护</div>
     </div>
     <div class="entry-layout">
       <aside class="entry-tabs">
@@ -1272,27 +1295,27 @@ export async function help() {
   const el = root();
   el.innerHTML = `
     <div class="section-head" style="margin-bottom:12px">
-      <div class="sh-sub">快速上手、数据说明与下一步计划</div>
+      <div class="sh-sub">快速上手与使用说明</div>
     </div>
     <div style="display:grid;grid-template-columns:1.1fr .9fr;gap:14px">
       <section class="panel"><div class="panel-hd"><span class="bar"></span><h3>快速上手</h3></div>
         <div class="panel-bd help-list">
-          <p><b>1. 看全局</b>：首页展示全库库存、扫描覆盖率、最新扫描和全国井位分布。</p>
+          <p><b>1. 看全局</b>：首页展示当前库库存、扫描覆盖率、最新扫描和井位分布。</p>
           <p><b>2. 找井</b>：井号列表支持地区 / 构造带 / 年份 / 关键字筛选；一行一口井，成果矩阵显示已生成的成果。</p>
           <p><b>3. 看柱状图</b>：点击井号进入单井，切换筒次查看综合柱状图；可打印或导出 PDF。</p>
           <p><b>4. 看影像</b>：在“岩心影像”中点任意一张图进入浏览器；左侧深度标尺可跳转，工具条可缩放、测量。</p>
           <p><b>5. 做测量</b>：点“测量”，在图上点两下，得到长度（mm）；点“保存标注”写入数据库。</p>
           <p><b>6. 管库存</b>：岩心库管理支持按状态筛选；点“登记流转”可登记入库 / 借阅 / 取样 / 损耗。</p>
-          <p><b>7. 录数据</b>：左侧“录入”可新增井、回次、岩心段、观察、裂缝、孔洞、井壁取心、样品、实验和取心设计；下方列表可编辑、删除，支持下载模板后 Excel 批量导入。</p>
+          <p><b>7. 录数据</b>：左侧“录入”可新增井、回次、岩心段、观察、裂缝、孔洞、井壁取心、样品、实验、取心设计和影像；下方列表可编辑、删除，支持 Excel 批量导入。</p>
         </div>
       </section>
       <section class="panel"><div class="panel-hd"><span class="bar"></span><h3>说明</h3></div>
         <div class="panel-bd help-list">
-          <p><b>数据说明</b>：当前为初版演示，15 口示范井、65 个岩心段、113 张合成影像；全库指标按 386 口井的口径展示。</p>
-          <p><b>技术栈</b>：Python 标准库 HTTP 服务 + SQLite（默认）/ PostgreSQL 16 + PostGIS + MinIO（设置 DATABASE_URL 后切换）+ 原生 ES Module 前端。</p>
-          <p><b>启动</b>：<code>python app/server.py</code>，访问 <code>http://127.0.0.1:8010</code>。</p>
+          <p><b>数据范围</b>：井、取心回次、岩心段、岩心观察、裂缝、孔洞、井壁取心、样品、实验、取心设计和影像均以当前库为准。</p>
+          <p><b>账号权限</b>：写入需要录入员或管理员权限；只读账号可以浏览井档案、影像和分析结果。</p>
+          <p><b>数据维护</b>：新增、修改、删除均保留审计记录；删除的记录可在“回收站”恢复。</p>
+          <p><b>影像</b>：上传后自动生成缩略图，可在井档案和影像浏览中查看。</p>
           <p><b>快捷键</b>：图片浏览时滚轮缩放，拖拽平移；测量模式下单击两次完成一条测量线。</p>
-          <p><b>下一步</b>：接入真实扫描仪目录、Excel 批量导入、权限与审批流、柱状图模板编辑器。</p>
         </div>
       </section>
     </div>`;

@@ -272,3 +272,4 @@ python app/seed.py
 - `POST /api/reports/well/<well_id>/<template_id>`（录入员/管理员）
 - 迁移完成后会删除旧表：`core_observation`、`experiments`、`experiment_depth`、`chart_category`、`chart_template`、`well_chart`。
 - 当前数据树：[docs/current_data_tree.png](docs/current_data_tree.png)
+- 井档案表格模式显示全部字段，点击任意一行打开档案；截图：[docs/wells_table_all_fields.png](docs/wells_table_all_fields.png)

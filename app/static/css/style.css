@@ -897,3 +897,12 @@ body::after { background: radial-gradient(1000px 500px at 50% -10%, rgba(20, 80,
 .report-matrix th small { color: var(--muted); font-weight: 400; font-size: 9px; }
 .report-matrix td { white-space: nowrap; text-align: center; }
 .report-matrix td:nth-child(1), .report-matrix td:nth-child(2) { text-align: left; }
+
+/* all-field well table */
+.well-table { min-width: 1480px; }
+.well-table th { white-space: nowrap; }
+.well-table td { white-space: nowrap; line-height: 1.45; }
+.well-table .sub { color: var(--muted); font-size: 9px; font-weight: 400; }
+.well-row { cursor: pointer; }
+.well-row:hover td { background: rgba(14, 116, 144, .06); }
+.well-row .well-link { color: var(--cyan); font-weight: 600; }

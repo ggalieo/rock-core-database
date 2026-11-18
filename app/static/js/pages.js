@@ -155,7 +155,7 @@ export async function wells() {
   let region = params.get("region") || "";
   let year = params.get("year") || "";
   let tectonic = params.get("tectonic") || "";
-  let mode = "cards";
+  let mode = qsFromHash().params.get("view") === "table" ? "table" : "cards";
   let lastData = null;
   let filtersPainted = false;
 
@@ -238,16 +238,25 @@ export async function wells() {
     </div>`;
   };
 
-  const tableHtml = (items) => `<div class="well-table-wrap"><div class="table-wrap"><table class="grid">
-    <thead><tr><th class="left">井号</th><th>地区</th><th>井型</th><th>岩心(米)</th><th>岩屑(包)</th><th>覆盖率</th><th>成果</th><th style="width:80px">操作</th></tr></thead>
-    <tbody>${items.map((w) => `<tr>
-      <td class="left"><span class="well-link" data-id="${w.id}">${esc(w.code)}</span> <span style="color:#64748b;font-size:10px">${esc(w.name)}</span></td>
-      <td>${esc(w.region)}</td><td>${esc(w.type)}</td>
-      <td><span class="badge-red">${fmt(w.inventory, 2)}</span></td>
-      <td class="num">${fmtInt(w.cuttings)}</td>
-      <td><span style="color:${w.coverage >= 70 ? "#0f9f6e" : w.coverage > 0 ? "#b7791f" : "#dc4c64"};font-family:Bahnschrift">${w.coverage}%</span></td>
+  const tableHtml = (items) => `<div class="well-table-wrap"><div class="table-wrap"><table class="grid well-table">
+    <thead><tr>
+      <th class="left">井号 / 井名</th><th class="left">地区 / 构造带</th><th>年份 / 井别</th>
+      <th>坐标</th><th>海拔</th><th>完钻 / 库存</th><th>岩屑 / 井壁</th>
+      <th>覆盖 / 扫描</th><th>状态</th><th class="left">操作人 / 更新</th><th>成果</th><th style="width:64px">操作</th>
+    </tr></thead>
+    <tbody>${items.map((w) => `<tr class="well-row" data-id="${w.id}">
+      <td class="left"><span class="well-link">${esc(w.code)}</span><br><span class="sub">${esc(w.name)}</span></td>
+      <td class="left">${esc(w.region)}<br><span class="sub">${esc(w.tectonic)}</span></td>
+      <td>${w.year}<br><span class="sub">${esc(w.type)}</span></td>
+      <td class="num" title="经度 ${fmt(w.lon,3)} / 纬度 ${fmt(w.lat,3)}">${fmt(w.lon, 3)}<br><span class="sub">${fmt(w.lat, 3)}</span></td>
+      <td class="num" title="补心 ${fmt(w.kb,2)} / 地面 ${fmt(w.ground,2)}">${fmt(w.kb, 2)}<br><span class="sub">${fmt(w.ground, 2)}</span></td>
+      <td class="num" title="完钻井深 ${fmt(w.final_depth,2)} / 库存 ${fmt(w.inventory,2)}">${fmt(w.final_depth, 2)}<br><span class="sub">${fmt(w.inventory, 2)} m</span></td>
+      <td class="num" title="岩屑 ${fmtInt(w.cuttings)} 包 / 井壁 ${fmtInt(w.sidewall)} 颗">${fmtInt(w.cuttings)}<br><span class="sub">${fmtInt(w.sidewall)} 颗</span></td>
+      <td><span style="color:${w.coverage >= 70 ? "#0f9f6e" : w.coverage > 0 ? "#b7791f" : "#dc4c64"};font-family:Bahnschrift">${w.coverage}%</span><br><span class="sub">${fmt(w.scanned,1)} m</span></td>
+      <td>${statusBadge(w.status)}</td>
+      <td class="left">${esc(w.operator)}<br><span class="sub">${esc(w.updated_at)}</span></td>
       <td><div class="wc-chips" style="margin:0;justify-content:center">
-        ${["COLUMN", "IMAGE", "FLUOR", "EXP", "STOCK"].map((k) => `<span class="chip ${w.products[k] === "done" ? "on" : "off"}">${({ COLUMN: "柱", IMAGE: "图", FLUOR: "荧", EXP: "验", STOCK: "库" })[k]}</span>`).join("")}
+        ${["COLUMN", "IMAGE", "FLUOR", "EXP", "STOCK"].map((k) => `<span class="chip ${w.products[k] === "done" ? "on" : "off"}" title="${k}">${({ COLUMN: "柱", IMAGE: "图", FLUOR: "荧", EXP: "验", STOCK: "库" })[k]}</span>`).join("")}
       </div></td>
       <td><button class="btn small ghost" data-id="${w.id}">档案</button></td>
     </tr>`).join("")}</tbody>
@@ -266,7 +275,7 @@ export async function wells() {
     if (year) query.set("year", year);
     if (tectonic) query.set("tectonic", tectonic);
     query.set("page", p);
-    query.set("page_size", "12");
+    query.set("page_size", "50");
     const data = await api("/api/wells?" + query.toString());
     lastData = data;
     if (!filtersPainted) paintFacets(data.filters);
@@ -314,6 +323,7 @@ export async function wells() {
     document.getElementById("wQuery").value = "";
     load(1);
   });
+  document.querySelectorAll("#viewToggle button").forEach((x) => x.classList.toggle("active", x.dataset.mode === mode));
   document.getElementById("viewToggle").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-mode]");
     if (!b) return;
@@ -328,9 +338,9 @@ export async function wells() {
   document.getElementById("exportWells").addEventListener("click", () => {
     const items = (lastData && lastData.items) || [];
     if (!items.length) { toast("暂无可导出的井", "error"); return; }
-    const head = ["井号", "井名", "区块", "构造", "年份", "井别", "扫描状态", "库存(m)", "覆盖率(%)"];
+    const head = ["井号", "井名", "区块", "构造带", "年份", "井别", "经度", "纬度", "补心海拔", "地面海拔", "完钻井深", "库存(m)", "岩屑(包)", "井壁(颗)", "覆盖率(%)", "扫描(m)", "扫描状态", "操作人", "更新时间"];
     const escCsv = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
-    const lines = [head.join(","), ...items.map((x) => [x.code, x.name, x.region, x.tectonic, x.year, x.type, x.status, x.inventory, x.coverage].map(escCsv).join(","))];
+    const lines = [head.join(","), ...items.map((x) => [x.code, x.name, x.region, x.tectonic, x.year, x.type, x.lon, x.lat, x.kb, x.ground, x.final_depth, x.inventory, x.cuttings, x.sidewall, x.coverage, x.scanned, x.status, x.operator, x.updated_at].map(escCsv).join(","))];
     const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -1434,7 +1444,7 @@ export async function help() {
       <section class="panel"><div class="panel-hd"><span class="bar"></span><h3>快速上手</h3></div>
         <div class="panel-bd help-list">
           <p><b>1. 看全局</b>：首页展示当前库库存、扫描覆盖率、最新扫描和井位分布。</p>
-          <p><b>2. 找井</b>：井号列表支持地区 / 构造带 / 年份 / 关键字筛选；一行一口井，成果矩阵显示已生成的成果。</p>
+          <p><b>2. 找井</b>：井号列表支持地区 / 构造带 / 年份 / 关键字筛选；卡片/表格切换，表格显示全部井字段，点击任意一行打开井档案。</p>
           <p><b>3. 看柱状图</b>：点击井号进入单井，切换筒次查看综合柱状图；可打印或导出 PDF。</p>
           <p><b>4. 看影像</b>：在“岩心影像”中点任意一张图进入浏览器；左侧深度标尺可跳转，工具条可缩放、测量。</p>
           <p><b>5. 做测量</b>：点“测量”，在图上点两下，得到长度（mm）；点“保存标注”写入数据库。</p>

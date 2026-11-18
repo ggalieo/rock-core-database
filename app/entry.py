@@ -28,6 +28,7 @@ ENTITIES = {
         "label": "井",
         "icon": "◫",
         "table": "wells",
+        "list_fields": ['code', 'name', 'region', 'year', 'status'],
         "desc": "新增一口井，井号不能重复。",
         "label_expr": "code || ' ' || COALESCE(name,'')",
         "fields": [
@@ -50,6 +51,7 @@ ENTITIES = {
         "label": "取心回次",
         "icon": "▤",
         "table": "runs",
+        "list_fields": ['well_id', 'run_no', 'top_md', 'bottom_md', 'recovery'],
         "desc": "回次号在同一口井内不能重复；顶底深单位 m。",
         "label_expr": "CAST(run_no AS text) || ' 回次'",
         "fields": [
@@ -70,6 +72,7 @@ ENTITIES = {
         "label": "岩心段",
         "icon": "▥",
         "table": "sections",
+        "list_fields": ['run_id', 'section_no', 'top_md', 'bottom_md', 'lithology'],
         "desc": "选择回次后自动带出井；段长留空时按顶底深计算。",
         "label_expr": "section_no",
         "fields": [
@@ -93,6 +96,7 @@ ENTITIES = {
         "label": "岩心观察",
         "icon": "◇",
         "table": "core_observation",
+        "list_fields": ['section_id', 'dip_angle', 'gas_show_code', 'observer'],
         "desc": "一个岩心段只能有一条观察记录，覆盖 2017 岩心 13 项。",
         "label_expr": "'段 ' || CAST(section_id AS text)",
         "fields": [
@@ -121,6 +125,7 @@ ENTITIES = {
         "label": "裂缝",
         "icon": "╱",
         "table": "core_fracture",
+        "list_fields": ['section_id', 'fracture_no', 'type_code', 'dip_angle'],
         "desc": "逐条裂缝；同段可多条，裂缝编号建议唯一。",
         "label_expr": "COALESCE(fracture_no,'裂缝') || ' / 段 ' || CAST(section_id AS text)",
         "fields": [
@@ -140,6 +145,7 @@ ENTITIES = {
         "label": "孔洞",
         "icon": "○",
         "table": "core_vug",
+        "list_fields": ['section_id', 'vug_no', 'type_code', 'area_mm2'],
         "desc": "逐条孔洞；面积单位 mm²，面孔率单位 %。",
         "label_expr": "COALESCE(vug_no,'孔洞') || ' / 段 ' || CAST(section_id AS text)",
         "fields": [
@@ -157,6 +163,7 @@ ENTITIES = {
         "label": "井壁取心",
         "icon": "◉",
         "table": "core_sidewall",
+        "list_fields": ['well_id', 'sample_no', 'depth_md', 'lithology'],
         "desc": "井级对象，不挂回次；样品号不能重复。",
         "label_expr": "sample_no || ' / ' || CAST(depth_md AS text) || 'm'",
         "fields": [
@@ -175,6 +182,7 @@ ENTITIES = {
         "label": "样品",
         "icon": "▣",
         "table": "samples",
+        "list_fields": ['well_id', 'sample_no', 'section_id', 'sample_type', 'status'],
         "desc": "样品必须属于一个岩心段或一颗井壁取心，二选一。",
         "label_expr": "sample_no",
         "fields": [
@@ -194,6 +202,7 @@ ENTITIES = {
         "label": "实验",
         "icon": "⌁",
         "table": "experiments",
+        "list_fields": ['well_id', 'sample_id', 'test_type', 'param', 'value', 'unit'],
         "desc": "选择样品后自动带出井、样品号、顶底深。",
         "label_expr": "test_type || ' / ' || COALESCE(param,'')",
         "fields": [
@@ -214,6 +223,7 @@ ENTITIES = {
         "label": "取心设计",
         "icon": "◎",
         "table": "coring_plan",
+        "list_fields": ['run_id', 'design_top_md', 'design_bottom_md', 'approved_by'],
         "desc": "每个回次只能有一条取心设计。",
         "label_expr": "'回次 ' || CAST(run_id AS text)",
         "fields": [
@@ -320,6 +330,240 @@ def _check_choice(conn, field, value):
     elif isinstance(opt, list) and value not in opt:
         raise EntryError(f"{field['label']}取值不正确", 400)
 
+
+def records(conn, entity, limit=40):
+    spec = ENTITIES.get(entity)
+    if not spec:
+        raise EntryError("未知录入对象", 404)
+    wanted = spec.get("list_fields", [f["name"] for f in spec["fields"][:4]])
+    fields = [f for f in spec["fields"] if f["name"] in wanted]
+    cols = ["id"] + [f["name"] for f in fields]
+    sql = f'SELECT {", ".join(cols)} FROM {spec["table"]} ORDER BY id DESC LIMIT ?'
+    items = _rows(conn, sql, (int(limit),))
+    total = _one(conn, f'SELECT COUNT(*) AS c FROM {spec["table"]}')["c"]
+    return {"entity": entity, "label": spec["label"], "total": total,
+            "fields": [{"name": "id", "label": "ID"}] + [{"name": f["name"], "label": f["label"]} for f in fields],
+            "items": items}
+
+
+def get_record(conn, entity, rid):
+    spec = ENTITIES.get(entity)
+    if not spec:
+        raise EntryError("未知录入对象", 404)
+    row = _one(conn, f'SELECT * FROM {spec["table"]} WHERE id=?', (rid,))
+    if not row:
+        raise EntryError("记录不存在", 404)
+    return {"entity": entity, "label": spec["label"], "record": row}
+
+
+def _unique(conn, entity, data, rid=None):
+    checks = {
+        "well": ("SELECT 1 AS ok FROM wells WHERE code=? AND id<>?", ("code",)),
+        "run": ("SELECT 1 AS ok FROM runs WHERE well_id=? AND run_no=? AND id<>?", ("well_id", "run_no")),
+        "section": ("SELECT 1 AS ok FROM sections WHERE run_id=? AND section_no=? AND id<>?", ("run_id", "section_no")),
+        "observation": ("SELECT 1 AS ok FROM core_observation WHERE section_id=? AND id<>?", ("section_id",)),
+        "sidewall": ("SELECT 1 AS ok FROM core_sidewall WHERE sample_no=? AND id<>?", ("sample_no",)),
+        "sample": ("SELECT 1 AS ok FROM samples WHERE sample_no=? AND id<>?", ("sample_no",)),
+        "coring_plan": ("SELECT 1 AS ok FROM coring_plan WHERE run_id=? AND id<>?", ("run_id",)),
+    }
+    if entity not in checks:
+        return
+    sql, names = checks[entity]
+    vals = [data.get(n) for n in names]
+    if all(v is not None for v in vals):
+        if _one(conn, sql, tuple(vals) + (rid or -1,)):
+            raise EntryError("数据重复，违反唯一约束", 409)
+
+
+def _mirror_update(conn, entity, rid, data):
+    if not is_postgres():
+        return
+    if entity == "well":
+        if "lon" not in data and "lat" not in data:
+            return
+        conn.execute("DELETE FROM well_geometry WHERE well_id=?", (rid,))
+        if data.get("lon") is not None and data.get("lat") is not None:
+            conn.execute("INSERT INTO well_geometry(well_id, geom) VALUES (?, ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography)",
+                         (rid, data["lon"], data["lat"]))
+    elif entity == "run" and data.get("top_md") is not None and data.get("bottom_md") is not None:
+        conn.execute("DELETE FROM run_depth WHERE run_id=?", (rid,))
+        conn.execute("INSERT INTO run_depth(run_id, depth) VALUES (?, numrange(?, ?, '[)'))",
+                     (rid, data["top_md"], data["bottom_md"]))
+    elif entity == "section" and data.get("top_md") is not None and data.get("bottom_md") is not None:
+        conn.execute("DELETE FROM section_depth WHERE section_id=?", (rid,))
+        conn.execute("INSERT INTO section_depth(section_id, depth) VALUES (?, numrange(?, ?, '[)'))",
+                     (rid, data["top_md"], data["bottom_md"]))
+    elif entity == "experiment" and data.get("top_md") is not None and data.get("bottom_md") is not None:
+        conn.execute("DELETE FROM experiment_depth WHERE experiment_id=?", (rid,))
+        conn.execute("INSERT INTO experiment_depth(experiment_id, depth) VALUES (?, numrange(?, ?, '[)'))",
+                     (rid, data["top_md"], data["bottom_md"]))
+
+
+def update(conn, entity, rid, body):
+    spec = ENTITIES.get(entity)
+    if not spec:
+        raise EntryError("未知录入对象", 404)
+    existing = _one(conn, f'SELECT * FROM {spec["table"]} WHERE id=?', (rid,))
+    if not existing:
+        raise EntryError("记录不存在", 404)
+
+    data = {}
+    for field in spec["fields"]:
+        if field["name"] not in body:
+            continue
+        val = _convert(field, body.get(field["name"]))
+        if field.get("required") and val is None:
+            raise EntryError(f"请填写{field['label']}", 400)
+        if val is not None:
+            _check_choice(conn, field, val)
+        data[field["name"]] = val
+
+    # keep required fields that were omitted
+    for field in spec["fields"]:
+        if field.get("required") and field["name"] not in data and existing.get(field["name"]) is None:
+            raise EntryError(f"请填写{field['label']}", 400)
+
+    if entity == "well":
+        if data.get("code") and _one(conn, "SELECT 1 AS ok FROM wells WHERE code=? AND id<>?", (data["code"], rid)):
+            raise EntryError("井号已存在", 409)
+    elif entity == "run":
+        well_id = data.get("well_id", existing["well_id"])
+        run_no = data.get("run_no", existing["run_no"])
+        if not _one(conn, "SELECT 1 AS ok FROM wells WHERE id=?", (well_id,)):
+            raise EntryError("所属井不存在", 400)
+        if data.get("top_md") is not None and data.get("bottom_md") is not None and data["bottom_md"] <= data["top_md"]:
+            raise EntryError("底深必须大于顶深", 400)
+        data["well_id"], data["run_no"] = well_id, run_no
+        _unique(conn, "run", data, rid)
+    elif entity == "section":
+        run_id = data.get("run_id", existing["run_id"])
+        run = _one(conn, "SELECT * FROM runs WHERE id=?", (run_id,))
+        if not run:
+            raise EntryError("所属回次不存在", 400)
+        data["run_id"] = run_id
+        data["well_id"] = run["well_id"]
+        top_md = data.get("top_md", existing.get("top_md"))
+        bottom_md = data.get("bottom_md", existing.get("bottom_md"))
+        if top_md is not None and bottom_md is not None and bottom_md <= top_md:
+            raise EntryError("底深必须大于顶深", 400)
+        data["top_md"], data["bottom_md"] = top_md, bottom_md
+        if data.get("length") is None and top_md is not None and bottom_md is not None:
+            data["length"] = round(bottom_md - top_md, 3)
+        section_no = data.get("section_no", existing["section_no"])
+        data["section_no"] = section_no
+        _unique(conn, "section", data, rid)
+    elif entity == "observation":
+        section_id = data.get("section_id", existing["section_id"])
+        if not _one(conn, "SELECT 1 AS ok FROM sections WHERE id=?", (section_id,)):
+            raise EntryError("岩心段不存在", 400)
+        data["section_id"] = section_id
+        _unique(conn, "observation", data, rid)
+    elif entity in ("fracture", "vug"):
+        section_id = data.get("section_id", existing["section_id"])
+        if not _one(conn, "SELECT 1 AS ok FROM sections WHERE id=?", (section_id,)):
+            raise EntryError("岩心段不存在", 400)
+        data["section_id"] = section_id
+    elif entity == "sidewall":
+        if data.get("well_id") and not _one(conn, "SELECT 1 AS ok FROM wells WHERE id=?", (data["well_id"],)):
+            raise EntryError("所属井不存在", 400)
+        if data.get("sample_no"):
+            _unique(conn, "sidewall", data, rid)
+    elif entity == "sample":
+        section_id = data.get("section_id", existing.get("section_id"))
+        sidewall_id = data.get("sidewall_id", existing.get("sidewall_id"))
+        if section_id and sidewall_id:
+            raise EntryError("样品只能属于岩心段或井壁取心之一", 400)
+        if not section_id and not sidewall_id:
+            raise EntryError("请选择岩心段或井壁取心", 400)
+        if section_id:
+            sec = _one(conn, "SELECT * FROM sections WHERE id=?", (section_id,))
+            if not sec:
+                raise EntryError("岩心段不存在", 400)
+            data["section_id"], data["sidewall_id"] = section_id, None
+            data["well_id"] = sec["well_id"]
+            data["top_md"] = data.get("top_md", sec["top_md"])
+            data["bottom_md"] = data.get("bottom_md", sec["bottom_md"])
+        else:
+            sw = _one(conn, "SELECT * FROM core_sidewall WHERE id=?", (sidewall_id,))
+            if not sw:
+                raise EntryError("井壁取心不存在", 400)
+            data["section_id"], data["sidewall_id"] = None, sidewall_id
+            data["well_id"] = sw["well_id"]
+            data["top_md"] = data.get("top_md", sw["depth_md"])
+            data["bottom_md"] = data.get("bottom_md", sw["depth_md"])
+        if data.get("sample_no"):
+            _unique(conn, "sample", data, rid)
+    elif entity == "experiment":
+        sample_id = data.get("sample_id", existing.get("sample_id"))
+        sample = _one(conn, "SELECT * FROM samples WHERE id=?", (sample_id,))
+        if not sample:
+            raise EntryError("样品不存在", 400)
+        data["sample_id"] = sample_id
+        data["well_id"] = sample["well_id"]
+        data["sample_code"] = sample["sample_no"]
+        data["sample_type"] = sample.get("sample_type")
+        data["top_md"] = sample.get("top_md")
+        data["bottom_md"] = sample.get("bottom_md")
+    elif entity == "coring_plan":
+        run_id = data.get("run_id", existing["run_id"])
+        if not _one(conn, "SELECT 1 AS ok FROM runs WHERE id=?", (run_id,)):
+            raise EntryError("取心回次不存在", 400)
+        data["run_id"] = run_id
+        _unique(conn, "coring_plan", data, rid)
+
+    cols = list(data.keys())
+    if not cols:
+        raise EntryError("没有可更新的字段", 400)
+    sets = ", ".join(f"{c}=?" for c in cols)
+    try:
+        conn.execute(f'UPDATE {spec["table"]} SET {sets} WHERE id=?', [data[c] for c in cols] + [rid])
+        _mirror_update(conn, entity, rid, data)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        msg = str(e)
+        if "UNIQUE" in msg.upper():
+            raise EntryError("数据重复，违反唯一约束", 409)
+        raise EntryError(f"更新失败：{msg[:200]}", 500)
+    return {"id": rid, "entity": entity, "label": spec["label"]}
+
+
+DEPENDENTS = {
+    "well": [("runs", "well_id"), ("strata", "well_id"), ("sections", "well_id"),
+             ("images", "well_id"), ("scans", "well_id"), ("products", "well_id"),
+             ("core_sidewall", "well_id"), ("samples", "well_id"), ("experiments", "well_id"),
+             ("inventory", "well_id"), ("txns", "well_id")],
+    "run": [("strata", "run_id"), ("sections", "run_id"), ("images", "run_id"), ("coring_plan", "run_id")],
+    "section": [("core_observation", "section_id"), ("core_fracture", "section_id"),
+                ("core_vug", "section_id"), ("samples", "section_id"), ("images", "section_id"),
+                ("inventory", "section_id"), ("txns", "section_id"), ("annotations", "section_id")],
+    "observation": [],
+    "fracture": [],
+    "vug": [],
+    "sidewall": [("samples", "sidewall_id")],
+    "sample": [("experiments", "sample_id")],
+    "experiment": [],
+    "coring_plan": [],
+}
+
+
+def delete(conn, entity, rid):
+    spec = ENTITIES.get(entity)
+    if not spec:
+        raise EntryError("未知录入对象", 404)
+    if not _one(conn, f'SELECT 1 AS ok FROM {spec["table"]} WHERE id=?', (rid,)):
+        raise EntryError("记录不存在", 404)
+    for table, col in DEPENDENTS.get(entity, []):
+        n = _one(conn, f'SELECT COUNT(*) AS c FROM {table} WHERE {col}=?', (rid,))["c"]
+        if n:
+            raise EntryError(f"存在 {n} 条关联记录，不能删除；请先处理子记录", 409)
+    try:
+        conn.execute(f'DELETE FROM {spec["table"]} WHERE id=?', (rid,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise EntryError(f"删除失败：{str(e)[:200]}", 500)
+    return {"id": rid, "entity": entity, "label": spec["label"], "deleted": True}
 
 def create(conn, entity, body):
     spec = ENTITIES.get(entity)

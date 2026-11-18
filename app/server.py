@@ -7,14 +7,18 @@ import os
 import re
 import sqlite3
 import sys
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote
 
 from db_backend import connect as db_connect, is_postgres
 from s3store import serve_core_object
-from entry import EntryError, create as entry_create, meta as entry_meta, recent as entry_recent
+from entry import (EntryError, create as entry_create, delete as entry_delete,
+                   get_record as entry_get, meta as entry_meta, recent as entry_recent,
+                   records as entry_records, update as entry_update)
+from excel_entry import import_rows as entry_import, template as entry_template
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -35,8 +39,18 @@ def one(conn, sql, params=()):
     return dict(r) if r else None
 
 
+def json_default(value):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, (bytes, bytearray)):
+        return value.hex()
+    return str(value)
+
+
 def ok(handler, data, status=200):
-    body = json.dumps(data, ensure_ascii=False).encode("utf-8")
+    body = json.dumps(data, ensure_ascii=False, default=json_default).encode("utf-8")
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Content-Length", str(len(body)))
@@ -47,6 +61,16 @@ def ok(handler, data, status=200):
 
 def fail(handler, msg, status=400):
     ok(handler, {"error": msg}, status)
+
+
+def send_file(handler, data, filename, content_type):
+    handler.send_response(200)
+    handler.send_header("Content-Type", content_type)
+    handler.send_header("Content-Length", str(len(data)))
+    handler.send_header("Content-Disposition", f'attachment; filename="{filename}"')
+    handler.send_header("Cache-Control", "no-store")
+    handler.end_headers()
+    handler.wfile.write(data)
 
 
 def image_url(file):
@@ -348,6 +372,18 @@ class Handler(BaseHTTPRequestHandler):
                 if path == "/api/entry/recent":
                     entity = qs.get("entity", [""])[0]
                     return ok(self, entry_recent(conn, entity))
+                if path == "/api/entry/list":
+                    entity = qs.get("entity", [""])[0]
+                    return ok(self, entry_records(conn, entity))
+                if path == "/api/entry/template":
+                    entity = qs.get("entity", [""])[0]
+                    data = entry_template(conn, entity)
+                    return send_file(self, data, f"template_{entity}.xlsx",
+                                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                m = re.match(r"^/api/entry/([a-z_]+)/(\d+)$", path)
+                if m:
+                    data = entry_get(conn, m.group(1), int(m.group(2)))
+                    return ok(self, data)
                 return fail(self, "not found", 404)
             except EntryError as e:
                 return fail(self, e.message, e.status)
@@ -357,6 +393,45 @@ class Handler(BaseHTTPRequestHandler):
             finally:
                 conn.close()
         self.serve_static(path)
+
+    def do_PUT(self):
+        parsed = urlparse(self.path)
+        path = unquote(parsed.path)
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            body = json.loads(self.rfile.read(length).decode("utf-8") or "{}") if length else {}
+        except Exception as e:
+            return fail(self, "invalid json: %s" % e, 400)
+        conn = db()
+        try:
+            m = re.match(r"^/api/entry/([a-z_]+)/(\d+)$", path)
+            if m:
+                return ok(self, entry_update(conn, m.group(1), int(m.group(2)), body))
+            return fail(self, "not found", 404)
+        except EntryError as e:
+            return fail(self, e.message, e.status)
+        except Exception as e:
+            sys.stderr.write("PUT error %s: %s\n" % (path, e))
+            return fail(self, str(e), 500)
+        finally:
+            conn.close()
+
+    def do_DELETE(self):
+        parsed = urlparse(self.path)
+        path = unquote(parsed.path)
+        conn = db()
+        try:
+            m = re.match(r"^/api/entry/([a-z_]+)/(\d+)$", path)
+            if m:
+                return ok(self, entry_delete(conn, m.group(1), int(m.group(2))))
+            return fail(self, "not found", 404)
+        except EntryError as e:
+            return fail(self, e.message, e.status)
+        except Exception as e:
+            sys.stderr.write("DELETE error %s: %s\n" % (path, e))
+            return fail(self, str(e), 500)
+        finally:
+            conn.close()
 
     def do_POST(self):
         parsed = urlparse(self.path)
@@ -375,6 +450,10 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/inventory/txn":
                 data = post_txn(conn, body)
                 return ok(self, data) if data else fail(self, "section not found", 404)
+            m = re.match(r"^/api/entry/import/([a-z_]+)$", path)
+            if m:
+                data = entry_import(conn, m.group(1), body.get("filename", ""), body.get("data", ""))
+                return ok(self, data)
             m = re.match(r"^/api/entry/([a-z_]+)$", path)
             if m:
                 data = entry_create(conn, m.group(1), body)

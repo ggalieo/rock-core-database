@@ -779,6 +779,7 @@ export async function entry() {
   if (!entities.length) { el.innerHTML = empty("没有可录入的数据对象"); return; }
   const wanted = qsFromHash().params.get("entity");
   let current = entities.some((x) => x.key === wanted) ? wanted : entities[0].key;
+  const state = { editingId: null, importResult: null };
 
   const optList = (f) => {
     const o = f.options;
@@ -809,23 +810,120 @@ export async function entry() {
     </div>`;
   };
 
-  const renderRecent = async (key) => {
-    const box = document.getElementById("entryRecent");
-    if (!box) return;
-    box.innerHTML = `<h4>最近录入 · ${esc(entities.find((x) => x.key === key)?.label || "")}</h4><div class="entry-recent-list">加载中…</div>`;
-    try {
-      const d = await api(`/api/entry/recent?entity=${encodeURIComponent(key)}`);
-      const items = d.items || [];
-      box.innerHTML = `<h4>最近录入 · ${esc(d.label)}</h4><div class="entry-recent-list">${
-        items.length ? items.map((x) => `<span class="entry-recent-item"><b>${esc(x.label)}</b> · #${x.id}</span>`).join("") : '<span class="entry-recent-item">暂无记录</span>'
-      }</div>`;
-    } catch (e) {
-      box.innerHTML = `<h4>最近录入</h4><div class="entry-recent-list"><span class="entry-recent-item">${esc(e.message)}</span></div>`;
+  const refreshMeta = async () => {
+    meta.options = (await api("/api/entry/meta")).options;
+  };
+
+  const fillForm = (record) => {
+    const form = document.getElementById("entryForm");
+    if (!form || !record) return;
+    for (const f of (entities.find((x) => x.key === current)?.fields || [])) {
+      const node = form.elements[f.name];
+      if (!node) continue;
+      let v = record[f.name];
+      if (v == null) v = "";
+      if (f.type === "date") v = String(v).slice(0, 10);
+      node.value = v;
     }
   };
 
-  const renderForm = (key) => {
+  const renderManager = async (key) => {
+    const box = document.getElementById("entryManager");
+    if (!box) return;
+    const ent = entities.find((x) => x.key === key);
+    box.innerHTML = `<div class="entry-manager-head"><h4>数据管理 · ${esc(ent?.label || "")}</h4><span>加载中…</span></div>`;
+    try {
+      const d = await api(`/api/entry/list?entity=${encodeURIComponent(key)}`);
+      const rows = d.items || [];
+      const head = (d.fields || []).map((f) => `<th>${esc(f.label)}</th>`).join("");
+      const body = rows.length ? rows.map((r) => `<tr>
+        <td>${r.id}</td>
+        ${(d.fields || []).filter((f) => f.name !== "id").map((f) => {
+          const raw = r[f.name];
+          const text = raw == null || raw === "" ? "—" : String(raw);
+          return `<td title="${esc(text)}">${esc(text.length > 36 ? text.slice(0, 36) + "…" : text)}</td>`;
+        }).join("")}
+        <td class="entry-actions-cell">
+          <button class="entry-act" data-edit="${r.id}">编辑</button>
+          <button class="entry-act danger" data-del="${r.id}">删除</button>
+        </td>
+      </tr>`).join("") : `<tr><td colspan="${(d.fields || []).length + 1}" class="empty">暂无记录</td></tr>`;
+
+      let resultHtml = "";
+      if (state.importResult) {
+        const r = state.importResult;
+        if (r.error) {
+          resultHtml = `<div class="entry-import-msg err">${esc(r.error)}</div>`;
+        } else {
+          resultHtml = `<div class="entry-import-msg ${r.failed ? "warn" : "ok"}">
+            导入 ${esc(r.label || "")}：共 ${r.total} 行，成功 ${r.created} 行，失败 ${r.failed} 行。
+            ${r.errors && r.errors.length ? `<details><summary>查看错误</summary><ul>${r.errors.map((e) => `<li>第 ${e.row} 行：${esc(e.error)}</li>`).join("")}</ul></details>` : ""}
+          </div>`;
+        }
+      }
+
+      box.innerHTML = `
+        <div class="entry-manager-head">
+          <h4>数据管理 · ${esc(d.label)} <span>共 ${d.total} 条，显示最近 ${rows.length} 条</span></h4>
+          <div class="entry-manager-actions">
+            <a class="btn ghost" href="/api/entry/template?entity=${encodeURIComponent(key)}">下载 Excel 模板</a>
+            <label class="btn ghost entry-file">导入 Excel<input type="file" id="entryFile" accept=".xlsx,.xlsm"></label>
+          </div>
+        </div>
+        ${resultHtml}
+        <div class="table-wrap"><table class="grid entry-table">
+          <thead><tr>${head}<th>操作</th></tr></thead>
+          <tbody>${body}</tbody>
+        </table></div>`;
+      const file = document.getElementById("entryFile");
+      if (file) file.addEventListener("change", async () => {
+        const f = file.files && file.files[0];
+        if (!f) return;
+        if (f.size > 8 * 1024 * 1024) { state.importResult = { error: "文件超过 8 MB" }; await renderManager(key); return; }
+        try {
+          const data = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(f);
+          });
+          const r = await api(`/api/entry/import/${encodeURIComponent(key)}`, {
+            method: "POST", body: JSON.stringify({ filename: f.name, data }),
+          });
+          state.importResult = r;
+          toast(`导入完成：成功 ${r.created} 行`, r.failed ? "error" : "ok");
+          await refreshMeta();
+          await renderManager(key);
+        } catch (err) {
+          state.importResult = { error: err.message || String(err) };
+          toast(state.importResult.error, "error");
+          await renderManager(key);
+        }
+      });
+      box.querySelectorAll("[data-edit]").forEach((btn) => btn.addEventListener("click", async () => {
+        try {
+          const d = await api(`/api/entry/${encodeURIComponent(key)}/${btn.dataset.edit}`);
+          renderForm(key, d.record);
+          document.getElementById("entryFormBox").scrollIntoView({ behavior: "smooth", block: "start" });
+        } catch (err) { toast(err.message || "读取失败", "error"); }
+      }));
+      box.querySelectorAll("[data-del]").forEach((btn) => btn.addEventListener("click", async () => {
+        if (!confirm(`确定删除 ${key} #${btn.dataset.del}？有关联子记录时会被拒绝。`)) return;
+        try {
+          await api(`/api/entry/${encodeURIComponent(key)}/${btn.dataset.del}`, { method: "DELETE" });
+          toast("已删除", "ok");
+          await refreshMeta();
+          await renderManager(key);
+        } catch (err) { toast(err.message || "删除失败", "error"); }
+      }));
+    } catch (err) {
+      box.innerHTML = `<div class="entry-import-msg err">${esc(err.message || String(err))}</div>`;
+    }
+  };
+
+  const renderForm = (key, record = null) => {
     current = key;
+    state.editingId = record ? record.id : null;
     const ent = entities.find((x) => x.key === key) || entities[0];
     document.querySelectorAll(".entry-tab").forEach((b) => b.classList.toggle("active", b.dataset.key === key));
     const formBox = document.getElementById("entryFormBox");
@@ -834,14 +932,17 @@ export async function entry() {
       <form id="entryForm" novalidate>
         <div class="entry-grid">${(ent.fields || []).map(control).join("")}</div>
         <div class="entry-actions">
-          <button class="btn" type="submit" id="entrySave">保存到数据库</button>
-          <button class="btn ghost" type="reset">清空</button>
-          <span class="hint">带 * 为必填；保存后下拉选项会自动刷新</span>
+          <button class="btn" type="submit" id="entrySave">${state.editingId ? "更新记录" : "保存到数据库"}</button>
+          ${state.editingId ? '<button class="btn ghost" type="button" id="entryCancel">取消编辑</button>' : '<button class="btn ghost" type="reset">清空</button>'}
+          <span class="hint">带 * 为必填；保存后列表与下拉选项会刷新</span>
         </div>
-        <div class="entry-msg" id="entryMsg"></div>
+        <div class="entry-msg" id="entryMsg">${state.editingId ? `正在编辑 #${state.editingId}` : ""}</div>
       </form>
-      <div class="entry-recent" id="entryRecent"></div>`;
+      <div class="entry-manager" id="entryManager"></div>`;
     const form = document.getElementById("entryForm");
+    if (record) fillForm(record);
+    const cancel = document.getElementById("entryCancel");
+    if (cancel) cancel.addEventListener("click", () => renderForm(key));
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
       const msg = document.getElementById("entryMsg");
@@ -851,33 +952,42 @@ export async function entry() {
         const node = form.elements[f.name];
         if (node) data[f.name] = node.value.trim();
       }
+      const editing = state.editingId;
       btn.disabled = true;
-      btn.textContent = "写入中…";
+      btn.textContent = editing ? "更新中…" : "写入中…";
       msg.className = "entry-msg";
       msg.textContent = "";
       try {
-        const r = await api(`/api/entry/${encodeURIComponent(key)}`, { method: "POST", body: JSON.stringify(data) });
+        const url = editing ? `/api/entry/${encodeURIComponent(key)}/${editing}` : `/api/entry/${encodeURIComponent(key)}`;
+        const r = await api(url, { method: editing ? "PUT" : "POST", body: JSON.stringify(data) });
+        if (editing) {
+          toast(`已更新 ${r.label} #${r.id}`, "ok");
+          state.editingId = null;
+          await refreshMeta();
+          renderForm(key);
+          return;
+        }
         msg.className = "entry-msg ok";
         msg.textContent = `已写入：${r.label} #${r.id}`;
         toast(`已保存${r.label}`, "ok");
         form.reset();
-        meta.options = (await api("/api/entry/meta")).options;
-        await renderRecent(key);
+        await refreshMeta();
+        await renderManager(key);
       } catch (err) {
         msg.className = "entry-msg err";
         msg.textContent = err.message || String(err);
         toast(err.message || "写入失败", "error");
       } finally {
         btn.disabled = false;
-        btn.textContent = "保存到数据库";
+        btn.textContent = editing ? "更新记录" : "保存到数据库";
       }
     });
-    renderRecent(key);
+    renderManager(key);
   };
 
   el.innerHTML = `
     <div class="section-head" style="margin-bottom:12px">
-      <div class="sh-sub">向主数据库写入井、回次、岩心段、观察、裂缝、孔洞、样品与实验</div>
+      <div class="sh-sub">新增、编辑、删除、Excel 批量导入；所有写入都会进入 SQLite / PostgreSQL 主库</div>
     </div>
     <div class="entry-layout">
       <aside class="entry-tabs">
@@ -886,7 +996,10 @@ export async function entry() {
       </aside>
       <div class="entry-main"><section class="panel"><div class="panel-bd" id="entryFormBox"></div></section></div>
     </div>`;
-  document.querySelectorAll(".entry-tab").forEach((b) => b.addEventListener("click", () => renderForm(b.dataset.key)));
+  document.querySelectorAll(".entry-tab").forEach((b) => b.addEventListener("click", () => {
+    state.importResult = null;
+    renderForm(b.dataset.key);
+  }));
   renderForm(current);
 }
 // ============================================================ admin
@@ -944,7 +1057,7 @@ export async function help() {
           <p><b>4. 看影像</b>：在“岩心影像”中点任意一张图进入浏览器；左侧深度标尺可跳转，工具条可缩放、测量。</p>
           <p><b>5. 做测量</b>：点“测量”，在图上点两下，得到长度（mm）；点“保存标注”写入数据库。</p>
           <p><b>6. 管库存</b>：岩心库管理支持按状态筛选；点“登记流转”可登记入库 / 借阅 / 取样 / 损耗。</p>
-          <p><b>7. 录数据</b>：左侧“录入”可新增井、回次、岩心段、观察、裂缝、孔洞、井壁取心、样品、实验和取心设计；保存后进入数据库。</p>
+          <p><b>7. 录数据</b>：左侧“录入”可新增井、回次、岩心段、观察、裂缝、孔洞、井壁取心、样品、实验和取心设计；下方列表可编辑、删除，支持下载模板后 Excel 批量导入。</p>
         </div>
       </section>
       <section class="panel"><div class="panel-hd"><span class="bar"></span><h3>说明</h3></div>

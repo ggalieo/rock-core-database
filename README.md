@@ -21,7 +21,7 @@ python app/server.py --port 8010
 
 浏览器打开 <http://127.0.0.1:8010>。
 
-依赖：Python 3.9+；生成影像需要 Pillow（`pip install pillow`）。服务本身只用 Python 标准库。
+依赖：Python 3.9+；生成影像需要 Pillow，Excel 导入/模板需要 openpyxl（`pip install pillow openpyxl`）。服务本身只用 Python 标准库。
 
 ## 已实现
 
@@ -214,5 +214,7 @@ python app/seed.py
 - `POST /api/entry/<entity>`：写入并返回新记录 ID
 
 校验包括：必填项、数值/日期格式、字典编码、井号/回次/段号/样品号唯一、顶底深关系、一个段一条观察、样品只能属于段或井壁取心之一。SQLite 和 PostgreSQL 共用同一套录入逻辑。
+
+支持按记录编辑、删除（有子记录时拒绝删除）以及 Excel 批量导入：可下载带字段说明和井/回次/段/样品参考 ID 的模板，导入结果会返回成功/失败行号和错误原因。
 
 当前“录入”只写结构化数据；影像文件上传、观察/裂缝/孔洞的详情展示页面尚未接入。

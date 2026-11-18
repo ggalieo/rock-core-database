@@ -128,3 +128,13 @@ python scripts/upload_assets_to_minio.py
 - `POST /api/entry/<entity>`：`well`、`run`、`section`、`observation`、`fracture`、`vug`、`sidewall`、`sample`、`experiment`、`coring_plan`
 
 写入前会校验必填、类型、字典、外键、顶底深、唯一键和“一段一观察”“样品只属于段或井壁取心之一”等规则。SQLite 使用 `lastrowid`，PostgreSQL 使用 `RETURNING id`，由 `app/db_backend.py` 统一。
+
+
+## 10. 编辑、删除与 Excel 导入
+
+- `GET /api/entry/list?entity=`：分页列表（当前最近 40 条）
+- `GET /api/entry/<entity>/<id>`：取单条记录用于编辑
+- `PUT /api/entry/<entity>/<id>`：更新
+- `DELETE /api/entry/<entity>/<id>`：删除；有子记录时返回 409，不级联删除
+- `GET /api/entry/template?entity=`：下载 Excel 模板（含字段说明和井/回次/段/样品参考 ID）
+- `POST /api/entry/import/<entity>`：Base64 上传 `.xlsx` / `.xlsm`，逐行校验并返回成功/失败明细

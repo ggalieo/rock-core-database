@@ -889,3 +889,11 @@ body::after { background: radial-gradient(1000px 500px at 50% -10%, rgba(20, 80,
 .login-card .form-row { margin-bottom: 12px; }
 .login-card .entry-actions { margin-top: 16px; }
 .login-demo { margin-top: 18px; padding-top: 12px; border-top: 1px dashed var(--line); color: var(--dim); font-size: 10px; line-height: 1.7; }
+
+/* report matrix */
+.report-matrix { overflow: auto; max-height: 68vh; }
+.report-matrix table { min-width: max-content; }
+.report-matrix th { white-space: nowrap; vertical-align: bottom; }
+.report-matrix th small { color: var(--muted); font-weight: 400; font-size: 9px; }
+.report-matrix td { white-space: nowrap; text-align: center; }
+.report-matrix td:nth-child(1), .report-matrix td:nth-child(2) { text-align: left; }

@@ -353,10 +353,10 @@ export async function well(id) {
   const totalRuns = runs.length;
   const totalCore = runs.reduce((s, r) => s + (r.core_length || 0), 0);
   const core = d.core || {};
-  const coreCount = ["observations", "fractures", "vugs", "sidewalls", "samples", "plans"]
+  const coreCount = ["descriptions", "fractures", "vugs", "sidewalls", "samples", "analyses", "batches", "plans"]
     .reduce((n, k) => n + ((core[k] || []).length), 0);
-  const charts = d.charts || [];
-  const chartDone = charts.filter((x) => x.status === "已生成").length;
+  const reports = d.reports || [];
+  const reportDone = reports.filter((x) => x.status === "已生成").length;
 
   el.innerHTML = `
     <div class="section-head" style="margin-bottom:12px">
@@ -388,7 +388,7 @@ export async function well(id) {
           <button data-tab="images">岩心影像 <em>${d.images.length}</em></button>
           <button data-tab="exp">实验分析 <em>${d.experiments.length}</em></button>
           <button data-tab="core">岩心数据 <em>${coreCount}</em></button>
-          <button data-tab="charts">图件成果 <em>${chartDone}/${charts.length}</em></button>
+          <button data-tab="charts">成果输出 <em>${reportDone}/${reports.length}</em></button>
           <button data-tab="stock">库存 <em>${d.inventory.length}</em></button>
         </div>
         <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e8eff5;font-size:10px;color:#7b8fa3;line-height:1.8">
@@ -474,14 +474,15 @@ export async function well(id) {
       岩心观察、裂缝、孔洞、井壁取心、样品和取心设计；点“编辑”进入统一录入页。
       2017 岩心 13 项已覆盖：观察 ${ (core.observations || []).length } 段。
     </div>
-    ${tbl("岩心观察（2017 13 项）", core.observations || [],
-      "<th>段号</th><th>井段(m)</th><th>收获率</th><th>岩性</th><th>结构</th><th>构造</th><th>接触</th><th>化石</th><th>倾角</th><th>荧光</th><th>含油</th><th>含气</th><th>破碎/磨损</th>",
-      (x) => `<td>${esc(x.section_no)}</td><td class="num">${fmt(x.top_md,2)}—${fmt(x.bottom_md,2)}</td>
+    ${tbl("岩心描述（按区间/版本）", core.descriptions || [],
+      "<th>段号</th><th>描述区间</th><th>类型</th><th>版本</th><th>当前</th><th>收获率</th><th>岩性</th><th>结构</th><th>构造</th><th>接触</th><th>化石</th><th>倾角</th><th>荧光</th><th>含油</th><th>含气</th><th>破碎/磨损</th>",
+      (x) => `<td>${esc(x.section_no)}</td><td class="num">${fmt(x.interval_top_md,2)}—${fmt(x.interval_bottom_md,2)}</td>
+        <td>${esc(x.description_type || "综合观察")}</td><td>v${x.version || 1}</td><td>${x.is_current ? "是" : "否"}</td>
         <td class="num">${x.recovery == null ? "—" : (x.recovery * 100).toFixed(1) + "%"}</td><td>${esc(x.lithology)}</td>
         <td>${esc(x.structure_name || x.structure_code)}</td><td>${esc(x.sedimentary_structure_name || x.sedimentary_structure_code)}</td>
-        <td>${esc(x.contact_relation_name || x.contact_relation_code)}</td><td title="${esc(x.fossil_desc)}">${esc((x.fossil_name || x.fossil_desc || "—").slice(0, 14))}</td>
+        <td>${esc(x.contact_relation_name || x.contact_relation_code)}</td><td title="${esc(x.fossil_desc)}">${esc((x.fossil_name || x.fossil_desc || "—").slice(0, 12))}</td>
         <td class="num">${fmt(x.dip_angle,1)}</td><td>${esc(x.fluorescence)}</td><td>${esc(x.oil_show)}</td>
-        <td>${esc(x.gas_show_name || x.gas_show_code)}</td><td>${esc(x.breakage_wear_name || x.breakage_wear_code)}</td>`, "observation")}
+        <td>${esc(x.gas_show_name || x.gas_show_code)}</td><td>${esc(x.breakage_wear_name || x.breakage_wear_code)}</td>`, "description")}
     ${tbl("裂缝", core.fractures || [],
       "<th>段号</th><th>编号</th><th>类型</th><th>倾角</th><th>走向</th><th>长度(mm)</th><th>宽度(mm)</th><th>充填</th>",
       (x) => `<td>${esc(x.section_no)}</td><td>${esc(x.fracture_no)}</td><td>${esc(x.type_name || x.type_code)}</td>
@@ -497,20 +498,28 @@ export async function well(id) {
       (x) => `<td>${esc(x.sample_no)}</td><td class="num">${fmt(x.depth_md,2)}</td><td>${esc(x.lithology)}</td>
         <td>${esc(x.oil_show)}</td><td>${esc(x.fluorescence)}</td><td class="left">${esc(x.analysis_summary)}</td>`, "sidewall")}
     ${tbl("样品", core.samples || [],
-      "<th>样品号</th><th>段号</th><th>类型</th><th>顶深</th><th>底深</th><th>状态</th>",
-      (x) => `<td>${esc(x.sample_no)}</td><td>${esc(x.section_no)}</td><td>${esc(x.sample_type)}</td>
+      "<th>样品号</th><th>段号</th><th>母样</th><th>类型</th><th>顶深</th><th>底深</th><th>状态</th>",
+      (x) => `<td>${esc(x.sample_no)}</td><td>${esc(x.section_no)}</td><td>${esc(x.parent_sample_no || "—")}</td><td>${esc(x.sample_type)}</td>
         <td class="num">${fmt(x.top_md,2)}</td><td class="num">${fmt(x.bottom_md,2)}</td><td>${esc(x.status)}</td>`, "sample")}
     ${tbl("取心设计", core.plans || [],
       "<th>回次</th><th>设计顶深</th><th>设计底深</th><th>设计进尺</th><th>设计心长</th><th>审批</th>",
       (x) => `<td>第${x.run_no}筒</td><td class="num">${fmt(x.design_top_md,2)}</td><td class="num">${fmt(x.design_bottom_md,2)}</td>
-        <td class="num">${fmt(x.design_footage,2)}</td><td class="num">${fmt(x.design_core_length,2)}</td><td>${esc(x.approved_by)}</td>`, "coring_plan")}`;
+        <td class="num">${fmt(x.design_footage,2)}</td><td class="num">${fmt(x.design_core_length,2)}</td><td>${esc(x.approved_by)}</td>`, "coring_plan")}
+    ${tbl("分析数据集", core.analyses || [],
+      "<th>名称</th><th>版本</th><th>当前</th><th>实验室</th><th>分析日期</th><th>深度校正</th>",
+      (x) => `<td>${esc(x.name)}</td><td>v${x.version}</td><td>${x.is_current ? "是" : "否"}</td>
+        <td>${esc(x.lab)}</td><td>${esc(x.analysis_date)}</td><td class="num">${fmt(x.depth_shift_m,2)}</td>`, "core_analysis")}
+    ${tbl("实验批次", core.batches || [],
+      "<th>批次号</th><th>数据集</th><th>实验室</th><th>方法</th><th>日期</th><th>质控</th>",
+      (x) => `<td>${esc(x.batch_no)}</td><td>${esc(x.analysis_name)}</td><td>${esc(x.lab)}</td>
+        <td>${esc(x.method)}</td><td>${esc(x.analysis_date)}</td><td>${esc(x.qc_status)}</td>`, "analysis_batch")}`;
 
   document.getElementById("tab-charts").innerHTML = `
     <section class="panel">
-      <div class="panel-hd"><span class="bar"></span><h3>图件成果</h3><span class="hd-sub">CHART OUTPUTS</span></div>
+      <div class="panel-hd"><span class="bar"></span><h3>成果输出</h3><span class="hd-sub">REPORT OUTPUTS</span></div>
       <div class="table-wrap"><table class="grid">
         <thead><tr><th>分类</th><th>模板</th><th>版本</th><th>项目</th><th>输出</th><th>状态</th><th>生成时间</th><th>操作</th></tr></thead>
-        <tbody>${charts.length ? charts.map((x) => `<tr>
+        <tbody>${reports.length ? reports.map((x) => `<tr>
           <td>${esc(x.category_name)}</td><td class="left">${esc(x.name)}</td>
           <td>${esc(x.version || "—")}</td><td>${esc(x.project || "通用")}</td><td>${esc(x.output_type)}</td>
           <td>${x.status === "已生成" ? '<span class="badge-soft badge-green">已生成</span>' : `<span class="badge-soft">${esc(x.status || "未生成")}</span>`}</td>
@@ -519,13 +528,13 @@ export async function well(id) {
             ${x.code === "CORE_BASIC" || x.code === "CORE_COMPOSITE" ? `<a class="btn small ghost" href="#/well/${id}?tab=column">查看</a>` : ""}
             ${!canWrite || x.status === "已生成" ? "" : `<button class="btn small chart-set" data-tid="${x.id}">标记已生成</button>`}
           </td>
-        </tr>`).join("") : `<tr><td colspan="8">${empty("暂无图件模板")}</td></tr>`}</tbody>
+        </tr>`).join("") : `<tr><td colspan="8">${empty("暂无成果模板")}</td></tr>`}</tbody>
       </table></div>
     </section>`;
   document.querySelectorAll(".chart-set").forEach((b) => b.addEventListener("click", async () => {
     try {
-      await api(`/api/chart/well/${id}/${b.dataset.tid}`, { method: "POST", body: JSON.stringify({ status: "已生成" }) });
-      toast("图件成果已更新", "ok");
+      await api(`/api/reports/well/${id}/${b.dataset.tid}`, { method: "POST", body: JSON.stringify({ status: "已生成" }) });
+      toast("成果输出已更新", "ok");
       well(id);
     } catch (e) { toast(e.message || "更新失败", "error"); }
   }));
@@ -958,7 +967,7 @@ export async function entry() {
 
   const optList = (f) => {
     const o = f.options;
-    if (Array.isArray(o)) return o.map((v) => ({ value: v, label: v }));
+    if (Array.isArray(o)) return o.map((v) => (typeof v === "object" ? { value: v.value, label: v.label } : { value: v, label: v }));
     if (!o || !o.kind) return [];
     if (o.kind === "dict") return (meta.options.dicts || {})[o.type] || [];
     return meta.options[o.kind] || [];
@@ -1282,12 +1291,48 @@ export async function entry() {
     renderForm(current);
   }
 }
+// ============================================================ reports
+export async function reports() {
+  const el = root();
+  el.innerHTML = loading("正在加载成果输出");
+  const m = await api("/api/reports/matrix");
+  const templates = m.templates || [];
+  const wells = m.wells || [];
+  const outputs = m.outputs || {};
+  let cat = "all";
+  const render = () => {
+    const list = cat === "all" ? templates : templates.filter((x) => x.category_name === cat);
+    const done = Object.values(outputs).filter((x) => x.status === "已生成").length;
+    const cats = [...new Set(templates.map((x) => x.category_name))];
+    el.innerHTML = `
+      <div class="section-head" style="margin-bottom:12px">
+        <div class="sh-sub">成果模板、成果状态与成果文件；与岩心数据录入分离</div>
+        <div class="sh-actions"><span class="badge-soft">已生成 ${done} 项</span></div>
+      </div>
+      <section class="panel">
+        <div class="panel-hd"><span class="bar"></span><h3>成果矩阵</h3><span class="hd-sub">REPORT OUTPUTS</span>
+          <div class="hd-actions"><select class="select" id="reportCat"><option value="all">全部分类</option>${cats.map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("")}</select></div>
+        </div>
+        <div class="table-wrap report-matrix"><table class="grid">
+          <thead><tr><th>井号</th><th>井名</th>${list.map((t) => `<th title="${esc(t.name)} ${esc(t.version)} ${esc(t.project)}">${esc(t.name)}${t.version ? `<br><small>${esc(t.version)}${t.project ? " · " + esc(t.project) : ""}</small>` : ""}</th>`).join("")}</tr></thead>
+          <tbody>${wells.map((w) => `<tr><td>${esc(w.code)}</td><td>${esc(w.name)}</td>${list.map((t) => {
+            const o = outputs[`${w.id}:${t.id}`];
+            return `<td>${o && o.status === "已生成" ? '<span class="badge-soft badge-green">已生成</span>' : '<span style="color:var(--dim)">—</span>'}</td>`;
+          }).join("")}</tr>`).join("")}</tbody>
+        </table></div>
+      </section>`;
+    const sel = document.getElementById("reportCat");
+    if (sel) { sel.value = cat; sel.addEventListener("change", () => { cat = sel.value; render(); }); }
+  };
+  render();
+}
+
 // ============================================================ admin
 export async function admin() {
   const el = root();
   el.innerHTML = loading("正在加载系统信息");
   const d = await api("/api/admin");
-  const tpl = await api("/api/chart/templates?all=1").catch(() => ({ items: [], categories: [] }));
+  const tpl = await api("/api/reports/templates?all=1").catch(() => ({ items: [], categories: [] }));
   el.innerHTML = `
     <div class="section-head" style="margin-bottom:12px">
       <div class="sh-sub">用户与角色 / 字典编码 / 操作审计</div>
@@ -1314,7 +1359,7 @@ export async function admin() {
       </section>
     </div>
     <section class="panel" style="margin-top:14px">
-      <div class="panel-hd"><span class="bar"></span><h3>图件模板</h3><span class="hd-sub">CHART TEMPLATES</span>
+      <div class="panel-hd"><span class="bar"></span><h3>成果模板</h3><span class="hd-sub">REPORT TEMPLATES</span>
         <div class="hd-actions"><button class="btn small" id="addChartTemplate">＋ 新增模板</button></div>
       </div>
       <div class="table-wrap"><table class="grid">
@@ -1338,7 +1383,7 @@ export async function admin() {
   document.getElementById("addChartTemplate").addEventListener("click", () => openChartTemplateModal(tpl.categories || []));
   document.querySelectorAll(".tpl-toggle").forEach((b) => b.addEventListener("click", async () => {
     try {
-      await api(`/api/chart/templates/${b.dataset.id}`, { method: "PUT", body: JSON.stringify({ is_active: b.dataset.active === "1" ? 0 : 1 }) });
+      await api(`/api/reports/templates/${b.dataset.id}`, { method: "PUT", body: JSON.stringify({ is_active: b.dataset.active === "1" ? 0 : 1 }) });
       toast("模板状态已更新", "ok");
       admin();
     } catch (e) { toast(e.message || "更新失败", "error"); }
@@ -1349,7 +1394,7 @@ function openChartTemplateModal(categories) {
   const opts = categories.map((c) => `<option value="${esc(c.code)}">${esc(c.name)}</option>`).join("");
   document.getElementById("modalRoot").innerHTML = `
     <div class="modal-mask"><div class="modal">
-      <div class="modal-hd">新增图件模板<button class="close" id="mClose">×</button></div>
+      <div class="modal-hd">新增成果模板<button class="close" id="mClose">×</button></div>
       <div class="modal-bd">
         <div class="form-row"><label>模板编码</label><input class="input" id="tplCode" placeholder="例如 CORE_COMPOSITE"></div>
         <div class="form-row"><label>模板名称</label><input class="input" id="tplName" placeholder="例如 岩心综合图"></div>
@@ -1365,7 +1410,7 @@ function openChartTemplateModal(categories) {
   document.getElementById("mCancel").addEventListener("click", close);
   document.getElementById("mSave").addEventListener("click", async () => {
     try {
-      await api("/api/chart/templates", { method: "POST", body: JSON.stringify({
+      await api("/api/reports/templates", { method: "POST", body: JSON.stringify({
         code: document.getElementById("tplCode").value.trim(),
         name: document.getElementById("tplName").value.trim(),
         category_code: document.getElementById("tplCat").value,

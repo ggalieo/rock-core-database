@@ -24,6 +24,7 @@ import audit
 from excel_entry import import_rows as entry_import, template as entry_template
 import image_entry
 import charts
+import reports
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -211,17 +212,25 @@ def api_well_detail(conn, wid):
     images = enrich_images(conn, rows(conn, """SELECT i.*, s.section_no, r.run_no FROM images i
         LEFT JOIN sections s ON s.id=i.section_id LEFT JOIN runs r ON r.id=i.run_id
         WHERE i.well_id=? AND i.deleted_at IS NULL ORDER BY i.top_md, i.type""", (wid,)))
-    experiments = rows(conn, "SELECT * FROM experiments WHERE well_id=? AND deleted_at IS NULL ORDER BY id", (wid,))
+    experiments = rows(conn, """SELECT r.*, b.batch_no, b.lab, b.method, a.name AS analysis_name,
+        sp.sample_no AS sample_code, sp.sample_type, sp.top_md, sp.bottom_md
+        FROM analysis_result r JOIN analysis_batch b ON b.id=r.batch_id
+        JOIN core_analysis a ON a.id=b.core_analysis_id
+        LEFT JOIN samples sp ON sp.id=r.sample_id
+        WHERE b.well_id=? AND r.deleted_at IS NULL AND b.deleted_at IS NULL
+        ORDER BY r.id""", (wid,))
     inventory = rows(conn, """SELECT inv.*, s.section_no, s.top_md, s.bottom_md FROM inventory inv
         LEFT JOIN sections s ON s.id=inv.section_id WHERE inv.well_id=? ORDER BY inv.id""", (wid,))
     prods = {p["code"]: p["status"] for p in conn.execute("SELECT code,status FROM products WHERE well_id=?", (wid,))}
+    descriptions = rows(conn, """SELECT d.*, s.section_no, s.top_md AS section_top, s.bottom_md AS section_bottom,
+        s.lithology, s.fluorescence, s.oil_show, r.recovery
+        FROM core_description d JOIN sections s ON s.id=d.section_id
+        JOIN runs r ON r.id=s.run_id
+        WHERE s.well_id=? AND d.deleted_at IS NULL AND s.deleted_at IS NULL
+        ORDER BY s.top_md, d.version""", (wid,))
     core = {
-        "observations": rows(conn, """SELECT o.*, s.section_no, s.top_md, s.bottom_md,
-            s.lithology, s.fluorescence, s.oil_show, r.recovery
-            FROM core_observation o JOIN sections s ON s.id=o.section_id
-            JOIN runs r ON r.id=s.run_id
-            WHERE s.well_id=? AND o.deleted_at IS NULL AND s.deleted_at IS NULL
-            ORDER BY s.top_md""", (wid,)),
+        "descriptions": descriptions,
+        "observations": descriptions,
         "fractures": rows(conn, """SELECT f.*, s.section_no, s.top_md, s.bottom_md
             FROM core_fracture f JOIN sections s ON s.id=f.section_id
             WHERE s.well_id=? AND f.deleted_at IS NULL AND s.deleted_at IS NULL
@@ -232,9 +241,15 @@ def api_well_detail(conn, wid):
             ORDER BY s.top_md, v.id""", (wid,)),
         "sidewalls": rows(conn, """SELECT * FROM core_sidewall
             WHERE well_id=? AND deleted_at IS NULL ORDER BY depth_md""", (wid,)),
-        "samples": rows(conn, """SELECT sp.*, s.section_no
+        "samples": rows(conn, """SELECT sp.*, s.section_no, p.sample_no AS parent_sample_no
             FROM samples sp LEFT JOIN sections s ON s.id=sp.section_id
+            LEFT JOIN samples p ON p.id=sp.parent_sample_id
             WHERE sp.well_id=? AND sp.deleted_at IS NULL ORDER BY sp.id""", (wid,)),
+        "analyses": rows(conn, """SELECT * FROM core_analysis
+            WHERE well_id=? AND deleted_at IS NULL ORDER BY is_current DESC, version DESC, id""", (wid,)),
+        "batches": rows(conn, """SELECT b.*, a.name AS analysis_name
+            FROM analysis_batch b JOIN core_analysis a ON a.id=b.core_analysis_id
+            WHERE b.well_id=? AND b.deleted_at IS NULL ORDER BY b.id""", (wid,)),
         "plans": rows(conn, """SELECT cp.*, r.run_no
             FROM coring_plan cp JOIN runs r ON r.id=cp.run_id
             WHERE r.well_id=? AND cp.deleted_at IS NULL AND r.deleted_at IS NULL
@@ -247,7 +262,7 @@ def api_well_detail(conn, wid):
                ("contact_relation_code", "contact", "contact_relation_name"),
                ("gas_show_code", "gas_show", "gas_show_name"),
                ("breakage_wear_code", "breakage_wear", "breakage_wear_name")]
-    for o in core["observations"]:
+    for o in core["descriptions"]:
         for code_field, dict_type, name_field in obs_map:
             o[name_field] = dict_map.get((dict_type, o.get(code_field)), o.get(code_field))
         o["fossil_name"] = dict_map.get(("fossil", o.get("fossil_desc")), o.get("fossil_desc"))
@@ -257,10 +272,10 @@ def api_well_detail(conn, wid):
     for v in core["vugs"]:
         v["type_name"] = dict_map.get(("vug_type", v.get("type_code")), v.get("type_code"))
         v["fill_name"] = dict_map.get(("fill", v.get("fill_code")), v.get("fill_code"))
-    chart_data = charts.well_charts(conn, wid)
+    report_data = reports.well_outputs(conn, wid)
     return {"well": well, "runs": runs, "images": images, "experiments": experiments,
             "inventory": inventory, "products": prods, "core": core,
-            "charts": chart_data["items"], "chart_categories": chart_data["categories"]}
+            "reports": report_data["items"], "report_categories": report_data["categories"]}
 
 
 def api_image_detail(conn, iid):
@@ -454,6 +469,18 @@ class Handler(BaseHTTPRequestHandler):
                 if path == "/api/entry/recent":
                     entity = qs.get("entity", [""])[0]
                     return ok(self, entry_recent(conn, entity))
+                if path == "/api/reports/templates":
+                    include = qs.get("all", ["0"])[0].lower() in ("1", "true", "yes")
+                    if include:
+                        user = auth.current_user(self)
+                        if not user or user.get("role_key") != "admin":
+                            return fail(self, "需要管理员权限", 403)
+                    return ok(self, reports.templates(conn, include_inactive=include))
+                if path == "/api/reports/matrix":
+                    return ok(self, reports.matrix(conn))
+                m = re.match(r"^/api/reports/well/(\d+)$", path)
+                if m:
+                    return ok(self, reports.well_outputs(conn, int(m.group(1))))
                 if path == "/api/chart/templates":
                     include = qs.get("all", ["0"])[0].lower() in ("1", "true", "yes")
                     if include:
@@ -500,6 +527,11 @@ class Handler(BaseHTTPRequestHandler):
             user = writer(self)
             if not user:
                 return
+            m = re.match(r"^/api/reports/templates/(\d+)$", path)
+            if m:
+                if user.get("role_key") != "admin":
+                    return fail(self, "需要管理员权限", 403)
+                return ok(self, reports.update_template(conn, int(m.group(1)), body, user))
             m = re.match(r"^/api/chart/templates/(\d+)$", path)
             if m:
                 if user.get("role_key") != "admin":
@@ -573,6 +605,13 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/inventory/txn":
                 data = post_txn(conn, body, user)
                 return ok(self, data) if data else fail(self, "section not found", 404)
+            m = re.match(r"^/api/reports/well/(\d+)/(\d+)$", path)
+            if m:
+                return ok(self, reports.set_status(conn, int(m.group(1)), int(m.group(2)), body, user))
+            if path == "/api/reports/templates":
+                if user.get("role_key") != "admin":
+                    return fail(self, "需要管理员权限", 403)
+                return ok(self, reports.create_template(conn, body, user), 201)
             m = re.match(r"^/api/chart/well/(\d+)/(\d+)$", path)
             if m:
                 return ok(self, charts.set_status(conn, int(m.group(1)), int(m.group(2)), body, user))

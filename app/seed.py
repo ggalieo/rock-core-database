@@ -576,6 +576,8 @@ def main():
     build_p0()
     from migrate_charts import main as build_charts
     build_charts()
+    from migrate_mainstream import main as build_mainstream
+    build_mainstream()
 
 
 if __name__ == "__main__":

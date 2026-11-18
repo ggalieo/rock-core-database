@@ -35,7 +35,9 @@ app/server.py  （保留现有 API 与前端）
 ## 3. 关键表
 
 - 原有：`wells`、`runs`、`strata`、`sections`、`images`、`scans`、`experiments`、`inventory`、`txns`、`products`、`users`、`audit`、`meta`
-- 2017 补充：`core_observation`、`core_fracture`、`core_vug`、`core_sidewall`、`samples`、`coring_plan`、`image_calibration`、`dictionary`
+- 2017 补充：`core_fracture`、`core_vug`、`core_sidewall`、`samples`、`coring_plan`、`image_calibration`、`dictionary`
+- 主流层次：`core_analysis`、`core_description`、`analysis_batch`、`analysis_result`；`samples.parent_sample_id`
+- 成果输出：`report_category`、`report_template`、`report_output`（与岩心数据分离）
 - 空间/深度镜像：`well_geometry`、`run_depth`、`section_depth`、`image_depth`、`experiment_depth`
 - 向量：`image_embedding(image_id, model, embedding vector(512))`，HNSW 余弦索引
 

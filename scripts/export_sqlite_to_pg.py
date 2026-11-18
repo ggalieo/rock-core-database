@@ -39,7 +39,9 @@ def insert_block(table, columns, rows, map_col=None):
         for c in columns:
             src = map_col.get(c, c) if map_col else c
             value = r.get(src)
-            if (table == "users" and c == "is_active") or (table == "chart_template" and c == "is_active"):
+            if ((table == "users" and c == "is_active") or
+                (table in ("chart_template", "report_template") and c == "is_active") or
+                (table in ("core_description", "core_analysis") and c == "is_current")):
                 vals.append("TRUE" if value else "FALSE")
             else:
                 vals.append(lit(value))
@@ -54,6 +56,7 @@ def main():
     out.append("-- Generated from app/data/core.db; do not edit by hand.\n")
     out.append("SET client_encoding = 'UTF8';\nBEGIN;\n")
     out.append("""TRUNCATE TABLE
+  report_output, report_template, report_category, analysis_result, analysis_batch, core_description, core_analysis,
   well_chart, chart_template, chart_category, image_embedding, annotations, image_calibration, txns, inventory,
   experiment_depth, experiments, samples, core_sidewall, core_vug,
   core_fracture, core_observation, coring_plan, products, scans,
@@ -66,11 +69,15 @@ RESTART IDENTITY CASCADE;
     simple = [
         ("chart_category", None, None),
         ("chart_template", None, None),
+        ("report_category", None, None),
+        ("report_template", None, None),
         ("dictionary", None, None),
         ("wells", None, None),
+        ("core_analysis", None, None),
         ("runs", None, None),
         ("strata", None, None),
         ("sections", None, None),
+        ("core_description", None, None),
         ("images", None, None),
         ("scans", None, None),
         ("products", None, None),
@@ -79,6 +86,8 @@ RESTART IDENTITY CASCADE;
         ("core_vug", None, None),
         ("core_sidewall", None, None),
         ("samples", None, None),
+        ("analysis_batch", None, None),
+        ("analysis_result", None, None),
         ("experiments", None, None),
         ("coring_plan", None, None),
         ("inventory", None, None),
@@ -88,6 +97,7 @@ RESTART IDENTITY CASCADE;
         ("users", None, None),
         ("meta", None, None),
         ("well_chart", None, None),
+        ("report_output", None, None),
     ]
 
     for table, map_col, _ in simple:
@@ -145,7 +155,9 @@ WHERE top_md IS NOT NULL AND bottom_md IS NOT NULL AND top_md < bottom_md;
 """)
 
     # sequences
-    id_tables = ["chart_template", "well_chart", "wells", "runs", "strata", "sections", "images", "scans", "products",
+    id_tables = ["chart_template", "well_chart", "report_template", "report_output",
+                 "core_analysis", "core_description", "analysis_batch", "analysis_result",
+                 "wells", "runs", "strata", "sections", "images", "scans", "products",
                  "core_observation", "core_fracture", "core_vug", "core_sidewall",
                  "samples", "experiments", "coring_plan", "inventory", "txns",
                  "annotations", "image_calibration", "users", "audit"]

@@ -12,6 +12,7 @@ const META = {
   search: ["影像检索", "IMAGE SEARCH"],
   inventory: ["库存管理", "INVENTORY"],
   stats: ["分析", "ANALYTICS"],
+  reports: ["成果管理", "REPORT OUTPUTS"],
   admin: ["设置", "SETTINGS"],
   login: ["登录", "SIGN IN"],
   logout: ["退出", "SIGN OUT"],
@@ -52,6 +53,7 @@ async function route() {
     else if (clean === "/search") { active = "search"; await pages.search(); }
     else if (clean === "/inventory") { active = "inventory"; await pages.inventory(); }
     else if (clean === "/stats") { active = "stats"; await pages.stats(); }
+    else if (clean === "/reports") { active = "reports"; await pages.reports(); }
     else if (clean === "/admin") { active = "admin"; await pages.admin(); }
     else if (clean === "/login") { active = "login"; await pages.login(); }
     else if (clean === "/logout") { active = "logout"; await pages.logout(); }

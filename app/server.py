@@ -23,7 +23,6 @@ import auth
 import audit
 from excel_entry import import_rows as entry_import, template as entry_template
 import image_entry
-import charts
 import reports
 
 BASE = Path(__file__).resolve().parent
@@ -481,16 +480,6 @@ class Handler(BaseHTTPRequestHandler):
                 m = re.match(r"^/api/reports/well/(\d+)$", path)
                 if m:
                     return ok(self, reports.well_outputs(conn, int(m.group(1))))
-                if path == "/api/chart/templates":
-                    include = qs.get("all", ["0"])[0].lower() in ("1", "true", "yes")
-                    if include:
-                        user = auth.current_user(self)
-                        if not user or user.get("role_key") != "admin":
-                            return fail(self, "需要管理员权限", 403)
-                    return ok(self, charts.templates(conn, include_inactive=include))
-                m = re.match(r"^/api/chart/well/(\d+)$", path)
-                if m:
-                    return ok(self, charts.well_charts(conn, int(m.group(1))))
                 if path == "/api/entry/list":
                     entity = qs.get("entity", [""])[0]
                     deleted = qs.get("deleted", ["0"])[0].lower() in ("1", "true", "yes")
@@ -532,11 +521,6 @@ class Handler(BaseHTTPRequestHandler):
                 if user.get("role_key") != "admin":
                     return fail(self, "需要管理员权限", 403)
                 return ok(self, reports.update_template(conn, int(m.group(1)), body, user))
-            m = re.match(r"^/api/chart/templates/(\d+)$", path)
-            if m:
-                if user.get("role_key") != "admin":
-                    return fail(self, "需要管理员权限", 403)
-                return ok(self, charts.update_template(conn, int(m.group(1)), body, user))
             m = re.match(r"^/api/entry/([a-z_]+)/(\d+)$", path)
             if m:
                 return ok(self, entry_update(conn, m.group(1), int(m.group(2)), body, actor=user))
@@ -612,13 +596,6 @@ class Handler(BaseHTTPRequestHandler):
                 if user.get("role_key") != "admin":
                     return fail(self, "需要管理员权限", 403)
                 return ok(self, reports.create_template(conn, body, user), 201)
-            m = re.match(r"^/api/chart/well/(\d+)/(\d+)$", path)
-            if m:
-                return ok(self, charts.set_status(conn, int(m.group(1)), int(m.group(2)), body, user))
-            if path == "/api/chart/templates":
-                if user.get("role_key") != "admin":
-                    return fail(self, "需要管理员权限", 403)
-                return ok(self, charts.create_template(conn, body, user), 201)
             m = re.match(r"^/api/entry/import/([a-z_]+)$", path)
             if m:
                 data = entry_import(conn, m.group(1), body.get("filename", ""), body.get("data", ""),

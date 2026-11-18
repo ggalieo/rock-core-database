@@ -578,6 +578,8 @@ def main():
     build_charts()
     from migrate_mainstream import main as build_mainstream
     build_mainstream()
+    from migrate_drop_legacy import main as drop_legacy
+    drop_legacy()
 
 
 if __name__ == "__main__":

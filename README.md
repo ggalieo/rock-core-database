@@ -270,3 +270,4 @@ python app/seed.py
 - `GET /api/reports/well/<well_id>`
 - `GET /api/reports/matrix`
 - `POST /api/reports/well/<well_id>/<template_id>`（录入员/管理员）
+- 迁移完成后会删除旧表：`core_observation`、`experiments`、`experiment_depth`、`chart_category`、`chart_template`、`well_chart`。

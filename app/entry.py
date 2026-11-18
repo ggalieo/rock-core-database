@@ -93,35 +93,6 @@ ENTITIES = {
             _f("description", "描述", "textarea", wide=True),
         ],
     },
-    "observation": {
-        "label": "岩心观察",
-        "icon": "◇",
-        "table": "core_observation",
-        "list_fields": ['section_id', 'dip_angle', 'gas_show_code', 'observer'],
-        "desc": "一个岩心段只能有一条观察记录，覆盖 2017 岩心 13 项。",
-        "label_expr": "'段 ' || CAST(section_id AS text)",
-        "fields": [
-            _f("section_id", "岩心段", "select", True, options={"kind": "sections"}),
-            _f("structure_code", "结构", "select", options={"kind": "dict", "type": "structure"}),
-            _f("structure_desc", "结构描述", "textarea", wide=True),
-            _f("sedimentary_structure_code", "构造", "select", options={"kind": "dict", "type": "sedimentary_structure"}),
-            _f("sedimentary_structure_desc", "构造描述", "textarea", wide=True),
-            _f("fracture_desc", "裂缝描述", "textarea", wide=True),
-            _f("fracture_density", "裂缝密度", "number", placeholder="条/m"),
-            _f("fracture_angle", "裂缝角度", "number", placeholder="°"),
-            _f("vug_desc", "孔洞描述", "textarea", wide=True),
-            _f("vug_size_mm", "孔洞尺寸", "number", placeholder="mm"),
-            _f("vug_area_pct", "面孔率", "number", placeholder="%"),
-            _f("contact_relation_code", "接触关系", "select", options={"kind": "dict", "type": "contact"}),
-            _f("fossil_desc", "化石", "textarea", wide=True),
-            _f("dip_angle", "倾角", "number", placeholder="°"),
-            _f("gas_show_code", "含气情况", "select", options={"kind": "dict", "type": "gas_show"}),
-            _f("breakage_wear_code", "破碎/磨损", "select", options={"kind": "dict", "type": "breakage_wear"}),
-            _f("observer", "观察人"),
-            _f("observed_at", "观察日期", "date"),
-            _f("remark", "备注", "textarea", wide=True),
-        ],
-    },
     "fracture": {
         "label": "裂缝",
         "icon": "╱",
@@ -199,27 +170,6 @@ ENTITIES = {
             _f("keeper", "保管人"),
             _f("status", "状态", "select", options=["已入库", "待实验", "实验中", "已完成"]),
             _f("collected_at", "采集日期", "date"),
-        ],
-    },
-    "experiment": {
-        "label": "实验",
-        "icon": "⌁",
-        "table": "experiments",
-        "list_fields": ['well_id', 'sample_id', 'test_type', 'param', 'value', 'unit'],
-        "desc": "选择样品后自动带出井、样品号、顶底深。",
-        "label_expr": "test_type || ' / ' || COALESCE(param,'')",
-        "fields": [
-            _f("sample_id", "样品", "select", True, options={"kind": "samples"}),
-            _f("test_type", "实验类型", required=True, placeholder="例如 孔隙度"),
-            _f("analysis_group", "分析大类", "select", options={"kind": "dict", "type": "analysis_group"}),
-            _f("param", "参数"),
-            _f("value", "数值", "number"),
-            _f("unit", "单位", placeholder="例如 % / 10⁻³μm²"),
-            _f("lab", "实验室"),
-            _f("method", "方法"),
-            _f("detection_limit", "检出限"),
-            _f("quality", "质量", placeholder="合格 / 可疑"),
-            _f("test_date", "实验日期", "date"),
         ],
     },
     "coring_plan": {
@@ -354,7 +304,7 @@ ENTITIES = {
     },
 }
 
-HIDDEN = {"observation", "experiment"}
+HIDDEN = set()
 ORDER = ["well", "run", "section", "description", "fracture", "vug", "sidewall",
          "sample", "core_analysis", "analysis_batch", "analysis_result",
          "coring_plan", "image"]
@@ -491,7 +441,6 @@ def _unique(conn, entity, data, rid=None):
         "well": ("SELECT 1 AS ok FROM wells WHERE code=? AND id<>?", ("code",)),
         "run": ("SELECT 1 AS ok FROM runs WHERE well_id=? AND run_no=? AND id<>?", ("well_id", "run_no")),
         "section": ("SELECT 1 AS ok FROM sections WHERE run_id=? AND section_no=? AND id<>?", ("run_id", "section_no")),
-        "observation": ("SELECT 1 AS ok FROM core_observation WHERE section_id=? AND id<>?", ("section_id",)),
         "sidewall": ("SELECT 1 AS ok FROM core_sidewall WHERE sample_no=? AND id<>?", ("sample_no",)),
         "sample": ("SELECT 1 AS ok FROM samples WHERE sample_no=? AND id<>?", ("sample_no",)),
         "coring_plan": ("SELECT 1 AS ok FROM coring_plan WHERE run_id=? AND id<>?", ("run_id",)),
@@ -522,10 +471,6 @@ def _mirror_update(conn, entity, rid, data):
     elif entity == "section" and data.get("top_md") is not None and data.get("bottom_md") is not None:
         conn.execute("DELETE FROM section_depth WHERE section_id=?", (rid,))
         conn.execute("INSERT INTO section_depth(section_id, depth) VALUES (?, numrange(?, ?, '[)'))",
-                     (rid, data["top_md"], data["bottom_md"]))
-    elif entity == "experiment" and data.get("top_md") is not None and data.get("bottom_md") is not None:
-        conn.execute("DELETE FROM experiment_depth WHERE experiment_id=?", (rid,))
-        conn.execute("INSERT INTO experiment_depth(experiment_id, depth) VALUES (?, numrange(?, ?, '[)'))",
                      (rid, data["top_md"], data["bottom_md"]))
 
 
@@ -632,12 +577,6 @@ def update(conn, entity, rid, body, actor='system'):
         section_no = data.get("section_no", existing["section_no"])
         data["section_no"] = section_no
         _unique(conn, "section", data, rid)
-    elif entity == "observation":
-        section_id = data.get("section_id", existing["section_id"])
-        if not _one(conn, "SELECT 1 AS ok FROM sections WHERE id=?", (section_id,)):
-            raise EntryError("岩心段不存在", 400)
-        data["section_id"] = section_id
-        _unique(conn, "observation", data, rid)
     elif entity in ("fracture", "vug"):
         section_id = data.get("section_id", existing["section_id"])
         if not _one(conn, "SELECT 1 AS ok FROM sections WHERE id=?", (section_id,)):
@@ -682,17 +621,6 @@ def update(conn, entity, rid, body, actor='system'):
             data["bottom_md"] = data.get("bottom_md", sw["depth_md"])
         if data.get("sample_no"):
             _unique(conn, "sample", data, rid)
-    elif entity == "experiment":
-        sample_id = data.get("sample_id", existing.get("sample_id"))
-        sample = _one(conn, "SELECT * FROM samples WHERE id=?", (sample_id,))
-        if not sample:
-            raise EntryError("样品不存在", 400)
-        data["sample_id"] = sample_id
-        data["well_id"] = sample["well_id"]
-        data["sample_code"] = sample["sample_no"]
-        data["sample_type"] = sample.get("sample_type")
-        data["top_md"] = sample.get("top_md")
-        data["bottom_md"] = sample.get("bottom_md")
     elif entity == "coring_plan":
         run_id = data.get("run_id", existing["run_id"])
         if not _one(conn, "SELECT 1 AS ok FROM runs WHERE id=?", (run_id,)):
@@ -721,13 +649,12 @@ def update(conn, entity, rid, body, actor='system'):
 DEPENDENTS = {
     "well": [("runs", "well_id"), ("strata", "well_id"), ("sections", "well_id"),
              ("images", "well_id"), ("scans", "well_id"), ("products", "well_id"),
-             ("core_sidewall", "well_id"), ("samples", "well_id"), ("experiments", "well_id"),
+             ("core_sidewall", "well_id"), ("samples", "well_id"),
              ("inventory", "well_id"), ("txns", "well_id")],
     "run": [("strata", "run_id"), ("sections", "run_id"), ("images", "run_id"), ("coring_plan", "run_id")],
-    "section": [("core_observation", "section_id"), ("core_fracture", "section_id"),
+    "section": [("core_fracture", "section_id"),
                 ("core_vug", "section_id"), ("samples", "section_id"), ("images", "section_id"),
                 ("inventory", "section_id"), ("txns", "section_id"), ("annotations", "section_id")],
-    "observation": [],
     "description": [],
     "core_analysis": [("analysis_batch", "core_analysis_id")],
     "analysis_batch": [("analysis_result", "batch_id")],
@@ -735,9 +662,7 @@ DEPENDENTS = {
     "fracture": [],
     "vug": [],
     "sidewall": [("samples", "sidewall_id")],
-    "sample": [("experiments", "sample_id"), ("analysis_result", "sample_id"),
-               ("samples", "parent_sample_id")],
-    "experiment": [],
+    "sample": [("analysis_result", "sample_id"), ("samples", "parent_sample_id")],
     "coring_plan": [],
     "image": [("annotations", "image_id"), ("image_calibration", "image_id"),
               ("core_fracture", "image_id"), ("core_vug", "image_id")],
@@ -901,11 +826,6 @@ def create(conn, entity, body, actor='system', dry_run=False):
                 data["length"] = round(data["bottom_md"] - data["top_md"], 3)
         if _one(conn, "SELECT 1 AS ok FROM sections WHERE run_id=? AND section_no=?", (data["run_id"], data["section_no"])):
             raise EntryError("该回次段号已存在", 409)
-    elif entity == "observation":
-        if not _one(conn, "SELECT 1 AS ok FROM sections WHERE id=?", (data["section_id"],)):
-            raise EntryError("岩心段不存在", 400)
-        if _one(conn, "SELECT 1 AS ok FROM core_observation WHERE section_id=?", (data["section_id"],)):
-            raise EntryError("该岩心段已有观察记录", 409)
     elif entity in ("fracture", "vug"):
         if not _one(conn, "SELECT 1 AS ok FROM sections WHERE id=?", (data["section_id"],)):
             raise EntryError("岩心段不存在", 400)
@@ -945,15 +865,6 @@ def create(conn, entity, body, actor='system', dry_run=False):
             if data.get("bottom_md") is None: data["bottom_md"] = sw["depth_md"]
         if _one(conn, "SELECT 1 AS ok FROM samples WHERE sample_no=?", (data["sample_no"],)):
             raise EntryError("样品号已存在", 409)
-    elif entity == "experiment":
-        sample = _one(conn, "SELECT * FROM samples WHERE id=?", (data["sample_id"],))
-        if not sample:
-            raise EntryError("样品不存在", 400)
-        data["well_id"] = sample["well_id"]
-        data["sample_code"] = sample["sample_no"]
-        data["sample_type"] = sample.get("sample_type")
-        data["top_md"] = sample.get("top_md")
-        data["bottom_md"] = sample.get("bottom_md")
     elif entity == "coring_plan":
         if not _one(conn, "SELECT 1 AS ok FROM runs WHERE id=?", (data["run_id"],)):
             raise EntryError("取心回次不存在", 400)
@@ -987,9 +898,6 @@ def create(conn, entity, body, actor='system', dry_run=False):
                              (new_id, data["top_md"], data["bottom_md"]))
             elif entity == "section" and data.get("top_md") is not None and data.get("bottom_md") is not None:
                 conn.execute("INSERT INTO section_depth(section_id, depth) VALUES (?, numrange(?, ?, '[)'))",
-                             (new_id, data["top_md"], data["bottom_md"]))
-            elif entity == "experiment" and data.get("top_md") is not None and data.get("bottom_md") is not None:
-                conn.execute("INSERT INTO experiment_depth(experiment_id, depth) VALUES (?, numrange(?, ?, '[)'))",
                              (new_id, data["top_md"], data["bottom_md"]))
         audit.log(conn, actor, "新增", f"{spec['label']} #{new_id}", data)
         conn.commit()

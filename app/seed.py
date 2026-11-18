@@ -548,11 +548,30 @@ def main():
         conn.execute("UPDATE sections SET strip_file=? WHERE id=?", (rel, s["id"]))
     conn.commit()
 
+    # two demo measurements on image 1, so the viewer has something to show
+    if conn.execute("SELECT COUNT(*) c FROM annotations").fetchone()["c"] == 0:
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        for geom, value in [
+            ({"x1": 120, "y1": 80, "x2": 320, "y2": 180}, 21.5),
+            ({"x1": 380, "y1": 120, "x2": 660, "y2": 190}, 19.7),
+        ]:
+            conn.execute("""INSERT INTO annotations(image_id,type,geometry,value,unit,label,author,created_at)
+                VALUES(?,?,?,?,?,?,?,?)""",
+                (1, "length", json.dumps(geom, ensure_ascii=False), value, "mm",
+                 f"{value} mm", "admin", now))
+        conn.commit()
+
     # summary
     counts = {t: conn.execute(f"SELECT COUNT(*) c FROM {t}").fetchone()["c"] for t in
               ["wells", "runs", "sections", "images", "experiments", "scans", "inventory", "txns"]}
     print("DB", DB_PATH)
     print("counts", counts)
+
+    # 2026-11: build the supplemented core-data model in the same rebuild.
+    # Keeps "python app/seed.py" as the single command for a complete demo DB.
+    conn.close()
+    from migrate_core_gap import main as build_core_gap
+    build_core_gap()
 
 
 if __name__ == "__main__":

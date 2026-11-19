@@ -180,6 +180,10 @@ def api_wells(conn, qs):
     for it in items:
         prods = rows(conn, "SELECT code, status FROM products WHERE well_id=?", (it["id"],))
         it["products"] = {p["code"]: p["status"] for p in prods}
+        it["reports"] = rows(conn, """SELECT ro.template_id, t.code, t.name, t.version, t.project,
+            ro.status, ro.generated_at
+            FROM report_output ro JOIN report_template t ON t.id=ro.template_id
+            WHERE ro.well_id=? AND t.is_active ORDER BY t.sort_no, t.id""", (it["id"],))
     filters = {
         "regions": [r["region"] for r in conn.execute("SELECT DISTINCT region FROM wells WHERE deleted_at IS NULL ORDER BY region")],
         "years": [r["year"] for r in conn.execute("SELECT DISTINCT year FROM wells WHERE deleted_at IS NULL ORDER BY year DESC")],

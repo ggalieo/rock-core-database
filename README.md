@@ -119,8 +119,9 @@ python app/seed.py
 
 `seed.py` 现在会同时完成：
 
-- 15 口示范井、21 个取心回次、65 个岩心段、113 张影像、90 项实验、45 条库存、12 条库存流水、2 条演示标注；
-- 2017 补充模型：`core_observation` 65 条、`core_fracture` 21 条、`core_vug` 25 条、`core_sidewall` 24 条、`samples` 15 条、`coring_plan` 21 条、`image_calibration` 65 条、`dictionary` 28 个码。
+- 15 口示范井、21 个取心回次、65 个岩心段、113 张影像、90 条实验结果、45 条库存、12 条库存流水、2 条演示标注；
+- 主流层次：`core_description` 65 条、`core_fracture` 21 条、`core_vug` 25 条、`core_sidewall` 24 条、`samples` 15 条、`coring_plan` 21 条、`image_calibration` 65 条、`dictionary` 46 个码。
+- 分析层次：`core_analysis` 15 套、`analysis_batch` 15 批、`analysis_result` 90 条；成果模板 7 个、井成果 105 条。
 
 注意：会删除并重建 `app/data/core.db`、`app/static/assets/core/`，同时清空手工添加的标注与库存流转；需要保留时先复制 `app/data/core.db`。
 
@@ -174,7 +175,7 @@ python app/seed.py
 
 - [数字岩心智能化平台_岩心数据模型补充设计.docx](数字岩心智能化平台_岩心数据模型补充设计.docx)
 - [PDF 版](数字岩心智能化平台_岩心数据模型补充设计.pdf)
-- 新增：`core_observation`、`core_fracture`、`core_vug`、`core_sidewall`、`samples`、`coring_plan`、`image_calibration`、`dictionary`；扩展 `experiments`、`annotations`。
+- 新增：`core_description`、`core_fracture`、`core_vug`、`core_sidewall`、`samples`、`coring_plan`、`image_calibration`、`dictionary`、`core_analysis`、`analysis_batch`、`analysis_result`、`report_*`；扩展 `annotations`。
 - 已应用到 `app/data/core.db`，并写入演示补充数据；迁移文件：`app/migrations/001_core_gap.sql`、`app/migrate_core_gap.py`。
 - 文档包含：补充前后覆盖对比、补充后可存储的数据类型、树逻辑图与关系基数、典型 SQL、验收建议。
 

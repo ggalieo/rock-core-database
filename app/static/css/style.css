@@ -899,10 +899,35 @@ body::after { background: radial-gradient(1000px 500px at 50% -10%, rgba(20, 80,
 .report-matrix td:nth-child(1), .report-matrix td:nth-child(2) { text-align: left; }
 
 /* all-field well table */
-.well-table { min-width: 1480px; }
+.well-table { min-width: 1580px; }
 .well-table th { white-space: nowrap; }
 .well-table td { white-space: nowrap; line-height: 1.45; }
 .well-table .sub { color: var(--muted); font-size: 9px; font-weight: 400; }
 .well-row { cursor: pointer; }
 .well-row:hover td { background: rgba(14, 116, 144, .06); }
 .well-row .well-link { color: var(--cyan); font-weight: 600; }
+
+/* chart output badges in well table */
+.report-mini { display: flex; gap: 3px; justify-content: center; flex-wrap: wrap; max-width: 230px; margin: 0 auto; }
+.report-mini-item {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 38px; padding: 2px 5px; border-radius: 8px;
+  border: 1px solid var(--line); background: #f8fbfd; color: var(--muted);
+  font-size: 9px; line-height: 1.4; text-decoration: none; white-space: nowrap;
+}
+.report-mini-item.on { border-color: rgba(15, 159, 110, .35); background: #e9f8f0; color: #0b7a55; }
+.report-mini-item:hover { border-color: var(--cyan); color: var(--cyan); background: #eef8fb; }
+
+/* focused report output */
+.report-focus-card { margin-bottom: 14px; padding: 18px 22px; border-left: 4px solid var(--cyan); }
+.rf-kicker { font-size: 9px; letter-spacing: .18em; color: var(--cyan); font-weight: 700; margin-bottom: 5px; }
+.rf-title { font-size: 22px; font-weight: 700; color: var(--navy); }
+.rf-title span { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 6px; }
+.rf-meta { display: flex; flex-wrap: wrap; gap: 14px; margin: 8px 0 12px; font-size: 11px; color: var(--muted); }
+.rf-meta span { padding-right: 14px; border-right: 1px solid var(--line); }
+.rf-meta span:last-child { border-right: 0; }
+.rf-actions { display: flex; align-items: center; gap: 10px; }
+.report-focus-row td { background: #eef9fc !important; }
+
+.image-filter-bar { margin-bottom: 12px; padding: 9px 14px; border: 1px solid var(--line); background: #f4fafc; border-radius: 7px; font-size: 11px; color: var(--muted); }
+.image-filter-bar a { color: var(--cyan); margin-left: 6px; }

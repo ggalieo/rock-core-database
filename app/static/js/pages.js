@@ -213,12 +213,32 @@ export async function wells() {
     });
   }
 
+  const REPORT_SHORT = {
+    CORE_BASIC: "基本图", CORE_COMPOSITE: "综合图", FLUORESCENCE: "荧光",
+    CUTTINGS_COMPOSITE: "岩屑", MULTI_WELL: "多井", BOREHOLE_COLUMN: "柱状",
+    CORE_LAYER: "层模板",
+  };
+  const reportAction = (wellId, r) => {
+    const map = {
+      CORE_BASIC: [`#/well/${wellId}?tab=column`, "打开综合柱状图"],
+      CORE_COMPOSITE: [`#/well/${wellId}?tab=column`, "打开综合柱状图"],
+      BOREHOLE_COLUMN: [`#/well/${wellId}?tab=column`, "打开钻孔柱状图"],
+      FLUORESCENCE: [`#/well/${wellId}?tab=images&type=FLUORESCENCE`, "查看荧光影像"],
+      CUTTINGS_COMPOSITE: [`#/well/${wellId}?tab=ledger`, "查看取心记录"],
+      MULTI_WELL: ["#/reports", "打开多井对比"],
+      CORE_LAYER: [`#/well/${wellId}?tab=core`, "查看岩心层段"],
+    };
+    return map[r.code] || [`#/well/${wellId}?tab=charts&template=${r.template_id}`, "查看成果"];
+  };
+  const reportHref = (wellId, r) => reportAction(wellId, r)[0];
+
   const cardHtml = (w) => {
     const ringColor = w.coverage >= 70 ? "#0f9f6e" : w.coverage > 0 ? "#b7791f" : "#dc4c64";
-    const chips = [
-      ["柱状图", w.products.COLUMN], ["影像", w.products.IMAGE], ["荧光", w.products.FLUOR],
-      ["实验", w.products.EXP], ["库存", w.products.STOCK],
-    ].map(([n, s]) => `<span class="chip ${s === "done" ? "on" : "off"}">${n}</span>`).join("");
+    const reps = w.reports || [];
+    const done = reps.filter((r) => r.status === "已生成").length;
+    const chips = reps.slice(0, 4).map((r) => `<span class="chip ${r.status === "已生成" ? "on" : "off"}">${REPORT_SHORT[r.code] || r.name}</span>`).join("") +
+      (reps.length > 4 ? `<span class="chip off">+${reps.length - 4}</span>` : "");
+    const reportLine = reps.length ? `成果图 ${done}/${reps.length}` : "暂无成果图";
     return `<div class="well-card" data-id="${w.id}">
       <div class="wc-top">
         <div>
@@ -234,7 +254,7 @@ export async function wells() {
         <div class="wc-metric"><b>${w.year}</b><span>完钻年份</span></div>
       </div>
       <div class="wc-chips">${chips}</div>
-      <div class="wc-hint">打开档案 →</div>
+      <div class="wc-hint">${reportLine} · 打开档案 →</div>
     </div>`;
   };
 
@@ -242,7 +262,7 @@ export async function wells() {
     <thead><tr>
       <th class="left">井号 / 井名</th><th class="left">地区 / 构造带</th><th>年份 / 井别</th>
       <th>坐标</th><th>海拔</th><th>完钻 / 库存</th><th>岩屑 / 井壁</th>
-      <th>覆盖 / 扫描</th><th>状态</th><th class="left">操作人 / 更新</th><th>成果</th><th style="width:64px">操作</th>
+      <th>覆盖 / 扫描</th><th>状态</th><th class="left">更新时间</th><th>成果图</th><th style="width:64px">操作</th>
     </tr></thead>
     <tbody>${items.map((w) => `<tr class="well-row" data-id="${w.id}">
       <td class="left"><span class="well-link">${esc(w.code)}</span><br><span class="sub">${esc(w.name)}</span></td>
@@ -254,10 +274,8 @@ export async function wells() {
       <td class="num" title="岩屑 ${fmtInt(w.cuttings)} 包 / 井壁 ${fmtInt(w.sidewall)} 颗">${fmtInt(w.cuttings)}<br><span class="sub">${fmtInt(w.sidewall)} 颗</span></td>
       <td><span style="color:${w.coverage >= 70 ? "#0f9f6e" : w.coverage > 0 ? "#b7791f" : "#dc4c64"};font-family:Bahnschrift">${w.coverage}%</span><br><span class="sub">${fmt(w.scanned,1)} m</span></td>
       <td>${statusBadge(w.status)}</td>
-      <td class="left">${esc(w.operator)}<br><span class="sub">${esc(w.updated_at)}</span></td>
-      <td><div class="wc-chips" style="margin:0;justify-content:center">
-        ${["COLUMN", "IMAGE", "FLUOR", "EXP", "STOCK"].map((k) => `<span class="chip ${w.products[k] === "done" ? "on" : "off"}" title="${k}">${({ COLUMN: "柱", IMAGE: "图", FLUOR: "荧", EXP: "验", STOCK: "库" })[k]}</span>`).join("")}
-      </div></td>
+      <td class="left">${esc(w.updated_at)}</td>
+      <td><div class="report-mini">${(w.reports || []).map((r) => `<a class="report-mini-item ${r.status === "已生成" ? "on" : ""}" href="${reportHref(w.id, r)}" data-report="1" title="${esc(r.name)} ${esc(r.version)} · ${esc(r.status)}">${REPORT_SHORT[r.code] || esc(r.name)}</a>`).join("") || '<span class="sub">—</span>'}</div></td>
       <td><button class="btn small ghost" data-id="${w.id}">档案</button></td>
     </tr>`).join("")}</tbody>
   </table></div></div>`;
@@ -332,15 +350,16 @@ export async function wells() {
     if (lastData) renderResults(lastData.items);
   });
   document.getElementById("wellResults").addEventListener("click", (e) => {
+    if (e.target.closest("[data-report]")) return;
     const t = e.target.closest("[data-id]");
     if (t) go(`#/well/${t.dataset.id}`);
   });
   document.getElementById("exportWells").addEventListener("click", () => {
     const items = (lastData && lastData.items) || [];
     if (!items.length) { toast("暂无可导出的井", "error"); return; }
-    const head = ["井号", "井名", "区块", "构造带", "年份", "井别", "经度", "纬度", "补心海拔", "地面海拔", "完钻井深", "库存(m)", "岩屑(包)", "井壁(颗)", "覆盖率(%)", "扫描(m)", "扫描状态", "操作人", "更新时间"];
+    const head = ["井号", "井名", "区块", "构造带", "年份", "井别", "经度", "纬度", "补心海拔", "地面海拔", "完钻井深", "库存(m)", "岩屑(包)", "井壁(颗)", "覆盖率(%)", "扫描(m)", "扫描状态", "更新时间"];
     const escCsv = (v) => `"${String(v == null ? "" : v).replace(/"/g, '""')}"`;
-    const lines = [head.join(","), ...items.map((x) => [x.code, x.name, x.region, x.tectonic, x.year, x.type, x.lon, x.lat, x.kb, x.ground, x.final_depth, x.inventory, x.cuttings, x.sidewall, x.coverage, x.scanned, x.status, x.operator, x.updated_at].map(escCsv).join(","))];
+    const lines = [head.join(","), ...items.map((x) => [x.code, x.name, x.region, x.tectonic, x.year, x.type, x.lon, x.lat, x.kb, x.ground, x.final_depth, x.inventory, x.cuttings, x.sidewall, x.coverage, x.scanned, x.status, x.updated_at].map(escCsv).join(","))];
     const blob = new Blob(["\ufeff" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -367,6 +386,19 @@ export async function well(id) {
     .reduce((n, k) => n + ((core[k] || []).length), 0);
   const reports = d.reports || [];
   const reportDone = reports.filter((x) => x.status === "已生成").length;
+  const reportViewHref = (r) => {
+    const map = {
+      CORE_BASIC: `#/well/${id}?tab=column`, CORE_COMPOSITE: `#/well/${id}?tab=column`,
+      BOREHOLE_COLUMN: `#/well/${id}?tab=column`,
+      FLUORESCENCE: `#/well/${id}?tab=images&type=FLUORESCENCE`,
+      CUTTINGS_COMPOSITE: `#/well/${id}?tab=ledger`,
+      MULTI_WELL: "#/reports",
+      CORE_LAYER: `#/well/${id}?tab=core`,
+    };
+    return map[r.code] || `#/well/${id}?tab=charts&template=${r.template_id}`;
+  };
+  const imageType = qsFromHash().params.get("type");
+  const visibleImages = imageType ? d.images.filter((x) => x.type === imageType) : d.images;
 
   el.innerHTML = `
     <div class="section-head" style="margin-bottom:12px">
@@ -450,13 +482,14 @@ export async function well(id) {
       </table></div>
     </section>`;
 
-  document.getElementById("tab-images").innerHTML = d.images.length ? `
+  document.getElementById("tab-images").innerHTML = visibleImages.length ? `
+    ${imageType ? `<div class="image-filter-bar">筛选：${imageTypeName(imageType)} · <a href="#/well/${id}?tab=images">查看全部影像</a></div>` : ""}
     <div class="result-list" style="grid-template-columns:repeat(auto-fill,minmax(230px,1fr))">
-      ${d.images.map((img) => `<div class="result-card image-card" data-id="${img.id}">
+      ${visibleImages.map((img) => `<div class="result-card image-card" data-id="${img.id}">
         <img src="${img.thumb_url}" alt="">
         <div class="rc-main"><b>${imageTypeName(img.type)}</b><span>${esc(img.section_no || "")} · ${fmt(img.top_md, 2)}—${fmt(img.bottom_md, 2)}m</span><span>${esc(img.captured_at || "")}</span></div>
       </div>`).join("")}
-    </div>` : empty("暂无影像");
+    </div>` : empty(imageType ? "暂无该类型影像" : "暂无影像");
 
   document.getElementById("tab-exp").innerHTML = d.experiments.length ? `
     <section class="panel"><div class="table-wrap"><table class="grid">
@@ -524,23 +557,35 @@ export async function well(id) {
       (x) => `<td>${esc(x.batch_no)}</td><td>${esc(x.analysis_name)}</td><td>${esc(x.lab)}</td>
         <td>${esc(x.method)}</td><td>${esc(x.analysis_date)}</td><td>${esc(x.qc_status)}</td>`, "analysis_batch")}`;
 
+  const focusTid = parseInt(qsFromHash().params.get("template") || "0", 10);
+  const focusReport = reports.find((x) => x.id === focusTid);
   document.getElementById("tab-charts").innerHTML = `
+    ${focusReport ? `<section class="panel report-focus-card">
+      <div class="rf-kicker">当前成果</div>
+      <div class="rf-title">${esc(focusReport.name)} <span>${esc(focusReport.version || "")}${focusReport.project ? " · " + esc(focusReport.project) : ""}</span></div>
+      <div class="rf-meta"><span>${esc(focusReport.category_name)}</span><span>${esc(focusReport.output_type)}</span><span>${esc(focusReport.status || "未生成")}</span><span>${esc(focusReport.generated_at || "尚未生成")}</span></div>
+      <div class="rf-actions">
+        <a class="btn small primary" href="${reportHref(id, focusReport)}">${reportAction(id, focusReport)[1]}</a>
+        <button class="btn small ghost" id="clearReportFocus">返回成果列表</button>
+      </div>
+    </section>` : ""}
     <section class="panel">
       <div class="panel-hd"><span class="bar"></span><h3>成果输出</h3><span class="hd-sub">REPORT OUTPUTS</span></div>
       <div class="table-wrap"><table class="grid">
         <thead><tr><th>分类</th><th>模板</th><th>版本</th><th>项目</th><th>输出</th><th>状态</th><th>生成时间</th><th>操作</th></tr></thead>
-        <tbody>${reports.length ? reports.map((x) => `<tr>
+        <tbody>${reports.length ? reports.map((x) => `<tr id="report-row-${x.id}" class="${focusTid === x.id ? "report-focus-row" : ""}">
           <td>${esc(x.category_name)}</td><td class="left">${esc(x.name)}</td>
           <td>${esc(x.version || "—")}</td><td>${esc(x.project || "通用")}</td><td>${esc(x.output_type)}</td>
           <td>${x.status === "已生成" ? '<span class="badge-soft badge-green">已生成</span>' : `<span class="badge-soft">${esc(x.status || "未生成")}</span>`}</td>
           <td>${esc(x.generated_at || "—")}</td>
           <td>
-            ${x.code === "CORE_BASIC" || x.code === "CORE_COMPOSITE" ? `<a class="btn small ghost" href="#/well/${id}?tab=column">查看</a>` : ""}
+            <a class="btn small ghost" href="${reportViewHref(x)}">查看</a>
             ${!canWrite || x.status === "已生成" ? "" : `<button class="btn small chart-set" data-tid="${x.id}">标记已生成</button>`}
           </td>
         </tr>`).join("") : `<tr><td colspan="8">${empty("暂无成果模板")}</td></tr>`}</tbody>
       </table></div>
     </section>`;
+  document.getElementById("clearReportFocus")?.addEventListener("click", () => go(`#/well/${id}?tab=charts`));
   document.querySelectorAll(".chart-set").forEach((b) => b.addEventListener("click", async () => {
     try {
       await api(`/api/reports/well/${id}/${b.dataset.tid}`, { method: "POST", body: JSON.stringify({ status: "已生成" }) });
@@ -586,6 +631,10 @@ export async function well(id) {
   if (initialTab) {
     const btn = document.querySelector(`#dossierNav button[data-tab="${initialTab}"]`);
     if (btn) btn.click();
+  }
+  if (qsFromHash().params.get("template")) {
+    const row = document.querySelector(".report-focus-row");
+    if (row) row.scrollIntoView({ block: "center", behavior: "smooth" });
   }
 
   function imageTypeName(t) { return imageTypeLabel(t); }

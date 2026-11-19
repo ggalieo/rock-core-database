@@ -274,3 +274,5 @@ python app/seed.py
 - 迁移完成后会删除旧表：`core_observation`、`experiments`、`experiment_depth`、`chart_category`、`chart_template`、`well_chart`。
 - 当前数据树：[docs/current_data_tree.png](docs/current_data_tree.png)
 - 井档案表格模式显示全部字段，点击任意一行打开档案；截图：[docs/wells_table_all_fields.png](docs/wells_table_all_fields.png)
+- 演示影像：真实岩心照片裁切并叠加蓝色区间、深度和井号标注；来源与许可见 [docs/image-credits.md](docs/image-credits.md)。
+- 真实岩心照片与标注示例：[docs/well_image_view.png](docs/well_image_view.png)、[docs/well_images.png](docs/well_images.png)

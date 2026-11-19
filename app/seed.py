@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Seed the demo core database and generate synthetic core images."""
+"""Seed the demo database and generate annotated, photo-based core images."""
 import json
 import math
 import os
@@ -8,11 +8,12 @@ import shutil
 import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
-from PIL import Image, ImageDraw, ImageFilter, ImageFont
+from PIL import Image, ImageDraw, ImageEnhance, ImageFilter, ImageFont, ImageOps
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
 CORE = STATIC / "assets" / "core"
+CORE_SRC = STATIC / "assets" / "core_source"
 DATA = BASE / "data"
 DB_PATH = DATA / "core.db"
 
@@ -219,6 +220,182 @@ def make_strip(w, h, seed, palette):
     d = ImageDraw.Draw(img)
     d.rectangle([0, 0, w - 1, h - 1], outline=(20, 25, 30), width=2)
     return img
+
+
+
+# ---------------------------------------------------------------- photo-based core images
+_SOURCE_CACHE = {}
+SOURCE_BY_LITH = {
+    "sand": ["dolostone.jpg", "onkalo_1.jpg"],
+    "mud": ["onkalo_2.jpg", "drill_core.jpg"],
+    "lime": ["dolostone.jpg", "onkalo_1.jpg"],
+    "congl": ["drill_core.jpg", "onkalo_2.jpg"],
+}
+
+
+def _source(name):
+    if name in _SOURCE_CACHE:
+        return _SOURCE_CACHE[name].copy()
+    path = CORE_SRC / name
+    if not path.exists():
+        return None
+    img = Image.open(path).convert("RGB")
+    _SOURCE_CACHE[name] = img
+    return img.copy()
+
+
+def _band(name, seed, w, h):
+    """Crop a realistic strip from a core-box photo, preserving scale."""
+    src = _source(name)
+    if src is None:
+        return _texture(w, h, seed, [(150, 140, 120), (110, 105, 92)])
+    rng = random.Random(seed)
+    target = w / h
+    crop_h = min(src.height, max(120, int(src.width / target)))
+    y = rng.randint(0, max(0, src.height - crop_h))
+    crop = src.crop((0, y, src.width, y + crop_h))
+    if rng.random() < 0.45:
+        crop = ImageOps.mirror(crop)
+    crop = crop.resize((w, h), Image.Resampling.LANCZOS)
+    crop = ImageEnhance.Contrast(crop).enhance(rng.uniform(1.02, 1.12))
+    crop = ImageEnhance.Color(crop).enhance(rng.uniform(0.95, 1.08))
+    return crop
+
+
+def _fit(name, seed, w, h):
+    src = _source(name)
+    if src is None:
+        return _texture(w, h, seed, [(150, 140, 120), (110, 105, 92)])
+    rng = random.Random(seed)
+    target = w / h
+    sw, sh = src.size
+    if sw / sh > target:
+        cw = int(sh * target)
+        x = rng.randint(0, max(0, sw - cw))
+        box = (x, 0, x + cw, sh)
+    else:
+        ch = int(sw / target)
+        y = rng.randint(0, max(0, sh - ch))
+        box = (0, y, sw, y + ch)
+    return src.crop(box).resize((w, h), Image.Resampling.LANCZOS)
+
+
+def _pill(d, xy, text, f, fg=(255, 255, 255), bg=(0, 150, 210), pad=(7, 3)):
+    b = d.textbbox((0, 0), text, font=f)
+    tw, th = b[2] - b[0], b[3] - b[1]
+    x, y = xy
+    d.rounded_rectangle([x, y, x + tw + pad[0] * 2, y + th + pad[1] * 2 + 2],
+                        radius=4, fill=bg)
+    d.text((x + pad[0], y + pad[1] - 1), text, font=f, fill=fg)
+    return tw + pad[0] * 2
+
+
+def _annotate(img, code, run_no, section_no, top, bottom, seed, uv=False):
+    """Mimic a field core-box photo with blue interval boxes and depth chips."""
+    rng = random.Random(seed + 99)
+    W, H = img.size
+    layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    d = ImageDraw.Draw(layer)
+    f10 = font(10)
+    f11 = font(11)
+    f12 = font(12, True)
+    blue = (0, 170, 230, 245)
+    cyan = (0, 235, 220, 235) if uv else blue
+    yellow = (255, 207, 64, 230)
+
+    # Three core rows, each with a blue running interval box.
+    rows = 3
+    top_pad = 20
+    bottom_pad = 26
+    row_h = (H - top_pad - bottom_pad) // rows
+    for i in range(rows):
+        y0 = top_pad + i * row_h + 2
+        y1 = top_pad + (i + 1) * row_h - 3
+        d.rounded_rectangle([6, y0, W - 6, y1], radius=4, outline=cyan, width=2)
+        # a yellow inner marker like a selected core piece
+        x0 = int(W * rng.uniform(0.18, 0.35))
+        x1 = int(W * rng.uniform(0.55, 0.78))
+        d.line([(x0, y1 - 3), (x1, y1 - 3)], fill=yellow, width=2)
+        if rng.random() < 0.6:
+            d.rounded_rectangle([x0, y0 + 4, x1, y1 - 5], radius=3,
+                                outline=(255, 255, 255, 120), width=1)
+        # depth pill at the left edge of every row
+        dep = top + (bottom - top) * (i + 0.5) / rows
+        _pill(d, (9, y0 + 3), f"{dep:.2f}", f10, fg=(255, 255, 255), bg=cyan)
+
+    # Boundary depth labels, like numbers painted on the core box.
+    for i in range(rows + 1):
+        y = top_pad + i * row_h
+        dep = top + (bottom - top) * i / rows
+        d.line([(W - 118, y), (W - 8, y)], fill=(255, 255, 255, 210), width=1)
+        _pill(d, (W - 112, y + 2), f"{dep:.2f}", f10, fg=(15, 45, 60),
+              bg=(245, 247, 242, 225))
+        d.text((W - 68, y + 4), "m", font=f10, fill=(245, 245, 245))
+
+    # Small field label, deliberately unobtrusive.
+    label = f"{code}  第{run_no}筒  {section_no}  {top:.2f}-{bottom:.2f}m"
+    _pill(d, (12, 5), label, f11, fg=(255, 255, 255), bg=(6, 43, 62, 220))
+    if uv:
+        _pill(d, (W - 96, 5), "UV 365nm", f10, fg=(0, 250, 220), bg=(2, 20, 28, 225))
+
+    return Image.alpha_composite(img.convert("RGBA"), layer).convert("RGB")
+
+
+def make_real_surface(w, h, seed, source, label, top, bottom, code, run_no, section_no):
+    return _annotate(_band(source, seed, w, h), code, run_no, section_no, top, bottom, seed)
+
+
+def make_real_rolled(w, h, seed, source, top, bottom, code, run_no):
+    img = _band(source, seed, w, h)
+    d = ImageDraw.Draw(img)
+    for x in (int(w * 0.34), int(w * 0.67)):
+        d.line([(x, 0), (x, h)], fill=(230, 235, 235), width=2)
+        d.line([(x + 3, 0), (x + 3, h)], fill=(30, 35, 38), width=1)
+    return _annotate(img, code, run_no, "展开", top, bottom, seed)
+
+
+def make_real_fluoro(w, h, seed, source, top, bottom, code, run_no, section_no):
+    base = _band(source, seed, w, h).convert("RGB")
+    # Dark UV base with a cyan cast; add plausible hydrocarbon fluorescence.
+    dark = ImageEnhance.Brightness(base).enhance(0.28)
+    blue = Image.new("RGB", (w, h), (2, 18, 30))
+    img = Image.blend(dark, blue, 0.45)
+    rng = random.Random(seed + 31)
+    glow = Image.new("RGB", (w, h), (0, 0, 0))
+    d = ImageDraw.Draw(glow)
+    for _ in range(rng.randint(110, 190)):
+        x, y = rng.randrange(w), rng.randrange(h)
+        rx, ry = rng.randint(4, 22), rng.randint(2, 10)
+        c = rng.choice([(0, 235, 175), (250, 220, 80), (40, 180, 255), (180, 255, 90)])
+        d.ellipse([x, y, x + rx, y + ry], fill=c)
+    glow = glow.filter(ImageFilter.GaussianBlur(5))
+    img = Image.blend(img, glow, 0.58)
+    return _annotate(img, code, run_no, section_no, top, bottom, seed, uv=True)
+
+
+def make_real_box(w, h, seed, source, label, code):
+    img = _fit(source, seed, w, h)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, w - 1, h - 1], outline=(8, 38, 55), width=4)
+    _pill(d, (14, 12), label, font(15, True), fg=(255, 255, 255), bg=(8, 48, 68))
+    _pill(d, (w - 126, h - 34), "岩心箱 / BOX 001", font(10), fg=(255, 255, 255),
+          bg=(8, 48, 68))
+    return img
+
+
+def make_real_thin(w, h, seed, label):
+    img = _fit("thin_section.jpg", seed, w, h)
+    d = ImageDraw.Draw(img)
+    d.rectangle([0, 0, w - 1, h - 1], outline=(245, 245, 245), width=2)
+    _pill(d, (14, 12), label, font(12, True), fg=(255, 255, 255), bg=(20, 24, 30))
+    x0, y0 = 20, h - 30
+    d.line([(x0, y0), (x0 + 120, y0)], fill=(255, 255, 255), width=4)
+    d.text((x0 + 40, y0 - 18), "0.5 mm", font=font(11), fill=(255, 255, 255))
+    return img
+
+
+def make_real_strip(w, h, seed, source):
+    return _band(source, seed, w, h)
 
 
 # ---------------------------------------------------------------- db
@@ -506,34 +683,41 @@ def main():
     for idx, row in enumerate(rows, start=1):
         code = row["code"]
         lith = LITH.get(code, ("细砂岩", "#b9a06a", "sand"))[2]
-        pal = palettes[lith]
+        sources = SOURCE_BY_LITH.get(lith, SOURCE_BY_LITH["sand"])
+        source = sources[row["id"] % len(sources)]
         typ = row["type"]
+        top = float(row["top_md"] if row["top_md"] is not None else 0)
+        bottom = float(row["bottom_md"] if row["bottom_md"] is not None else top + 0.5)
+        run_no = row["run_no"] or 1
+        section_no = row["section_no"] or "—"
+        label = f"{code}  第{run_no}筒  {section_no}  {top:.2f}-{bottom:.2f}m"
         if typ == "SURFACE":
-            label = f"{code}  第{row['run_no']}筒  {row['section_no']}  {row['top_md']:.2f}-{row['bottom_md']:.2f}m"
-            img = make_surface(960, 340, row["id"] * 13 + 5, pal, label)
+            img = make_real_surface(960, 340, row["id"] * 13 + 5, source, label,
+                                    top, bottom, code, run_no, section_no)
         elif typ == "ROLLED":
-            label = f"{code}  第{row['run_no']}筒  展开图  {row['top_md']:.2f}-{row['bottom_md']:.2f}m"
-            img = make_rolled(1500, 300, row["id"] * 13 + 7, pal, label)
+            img = make_real_rolled(1500, 300, row["id"] * 13 + 7, source,
+                                   top, bottom, code, run_no)
         elif typ == "FLUORESCENCE":
-            label = f"{code}  第{row['run_no']}筒  荧光  {row['top_md']:.2f}-{row['bottom_md']:.2f}m"
-            img = make_fluoro(960, 340, row["id"] * 13 + 11, pal, label)
+            img = make_real_fluoro(960, 340, row["id"] * 13 + 11, source,
+                                   top, bottom, code, run_no, section_no)
         elif typ == "BOX":
-            img = make_box(900, 480, row["id"] * 13 + 17, pal, f"{code}  岩心箱  001")
+            img = make_real_box(900, 480, row["id"] * 13 + 17, source,
+                                f"{code}  岩心箱  001", code)
         else:
-            img = make_thin(600, 600, row["id"] * 13 + 19, pal)
+            img = make_real_thin(600, 600, row["id"] * 13 + 19,
+                                 f"{code}  {section_no}  薄片")
         file_rel = f"assets/core/img_{row['id']}.jpg"
         thumb_rel = f"assets/core/thumb_{row['id']}.jpg"
-        img.save(STATIC / file_rel, quality=86)
+        img.save(STATIC / file_rel, quality=88)
         img.resize((240, 90), Image.Resampling.LANCZOS).save(STATIC / thumb_rel, quality=82)
         if typ in ("ROLLED", "FLUORESCENCE"):
             if typ == "ROLLED":
-                v = make_strip(300, 1200, row["id"] * 13 + 9, pal)
-                vd = ImageDraw.Draw(v)
-                for yy in (400, 800):
-                    vd.line([(0, yy), (300, yy)], fill=(35, 30, 26), width=2)
+                v = make_real_rolled(300, 1200, row["id"] * 13 + 9, source,
+                                     top, bottom, code, run_no)
             else:
-                v = make_fluoro(300, 1200, row["id"] * 13 + 11, pal, "")
-            v.save(STATIC / file_rel.replace(".jpg", "_v.jpg"), quality=86)
+                v = make_real_fluoro(300, 1200, row["id"] * 13 + 11, source,
+                                     top, bottom, code, run_no, section_no)
+            v.save(STATIC / file_rel.replace(".jpg", "_v.jpg"), quality=88)
         conn.execute("UPDATE images SET file=?, thumb=?, width=?, height=? WHERE id=?",
                      (file_rel, thumb_rel, img.width, img.height, row["id"]))
         if idx % 20 == 0 or idx == total:
@@ -542,7 +726,8 @@ def main():
     # strips per section
     for s in conn.execute("""SELECT s.*, w.code FROM sections s JOIN wells w ON w.id=s.well_id""").fetchall():
         lith = LITH.get(s["code"], ("细砂岩", "#b9a06a", "sand"))[2]
-        img = make_strip(140, 280, s["id"] * 7 + 3, palettes[lith])
+        source = SOURCE_BY_LITH.get(lith, SOURCE_BY_LITH["sand"])[s["id"] % 2]
+        img = make_real_strip(140, 280, s["id"] * 7 + 3, source)
         rel = f"assets/core/strip_{s['id']}.jpg"
         img.save(STATIC / rel, quality=86)
         conn.execute("UPDATE sections SET strip_file=? WHERE id=?", (rel, s["id"]))

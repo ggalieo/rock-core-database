@@ -233,6 +233,17 @@ python app/seed.py
 - **Excel 导入增强**：支持预检查（dry-run）、业务编码解析（井号/回次号/段号/样品号）、错误 CSV 下载；参考 ID 表随模板提供。
 - **PostgreSQL/MinIO**：Schema、Seed、Compose、S3 上传代码已同步；本机没有 Docker/PG/MinIO，未做实例级联调。
 
+## 四层架构
+
+- **数据层**：井、取心、岩心段、描述、样品、分析数据、影像、库存、模板。
+- **操作层**：录入、批量导入、校验、成果生成、审核、检索。
+- **展示层**：井档案、综合柱状图、影像查看器、成果矩阵、表格。
+- **成果层**：`report_output` 成果记录 + PNG 文件 + 数据版本/文件哈希/审核状态；PDF 为扩展位。
+
+成果图不是录入数据，由结构化数据 + 模板生成；人工只维护模板、参数、审核和外部附件。
+
+![四层架构](docs/four_layer_architecture.png)
+
 ## 主流层次与成果输出
 
 岩心数据按主流层次组织：
@@ -254,13 +265,14 @@ python app/seed.py
 
 - `report_category`：成果分类
 - `report_template`：成果模板编码、名称、分类、版本、项目/客户、输出类型、配置 JSON、启用状态
-- `report_output`：井 × 模板的成果状态、文件/图片地址、生成时间、生成人
+- `report_output`：井 × 模板的成果记录；含 `source_type`、`renderer_key`、`template_version`、`data_version`、`file_hash`、`file_size`、`review_status`
 
 界面：
 
-- 井档案“成果输出”页签只读展示成果状态。
+- 井档案“成果输出”可生成/重新生成岩心基本图、岩心综合图，并打开 PNG 成果文件。
 - 独立“成果”导航提供成果矩阵。
 - 设置页“成果模板”可新增模板、启用/停用模板。
+- 当前只有基本图/综合图接入 PNG 渲染器；其余 5 类保留台账和对应业务视图，后续接渲染器。
 - 原有 `products` 保留为成果总览。
 
 接口：
@@ -270,9 +282,12 @@ python app/seed.py
 - `PUT /api/reports/templates/<id>`（管理员）
 - `GET /api/reports/well/<well_id>`
 - `GET /api/reports/matrix`
-- `POST /api/reports/well/<well_id>/<template_id>`（录入员/管理员）
+- `POST /api/reports/well/<well_id>/<template_id>/generate`（录入员/管理员，生成 PNG 成果）
+- `POST /api/reports/well/<well_id>/<template_id>`（仅状态/外部记录，不能只改状态冒充生成）
 - 迁移完成后会删除旧表：`core_observation`、`experiments`、`experiment_depth`、`chart_category`、`chart_template`、`well_chart`。
 - 当前数据树：[docs/current_data_tree.png](docs/current_data_tree.png)
+- 四层架构图：[docs/four_layer_architecture.png](docs/four_layer_architecture.png)
+- 当前数据类型树：[docs/data_type_tree.png](docs/data_type_tree.png)
 - 井档案表格模式显示全部字段，点击任意一行打开档案；截图：[docs/wells_table_all_fields.png](docs/wells_table_all_fields.png)
 - 演示影像：真实岩心照片裁切并叠加蓝色区间、深度和井号标注；来源与许可见 [docs/image-credits.md](docs/image-credits.md)。
 - 真实岩心照片与标注示例：[docs/well_image_view.png](docs/well_image_view.png)、[docs/well_images.png](docs/well_images.png)

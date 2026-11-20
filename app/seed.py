@@ -491,6 +491,9 @@ def main():
     if CORE.exists():
         shutil.rmtree(CORE)
     CORE.mkdir(parents=True, exist_ok=True)
+    generated = STATIC / "generated"
+    if generated.exists():
+        shutil.rmtree(generated)
     if DB_PATH.exists():
         DB_PATH.unlink()
 
@@ -765,8 +768,22 @@ def main():
     build_mainstream()
     from migrate_report_cleanup import main as cleanup_reports
     cleanup_reports()
+    from migrate_report_artifacts import main as build_report_artifacts
+    build_report_artifacts()
     from migrate_drop_legacy import main as drop_legacy
     drop_legacy()
+
+    # Generate one real output artifact so the four layers are demonstrable
+    # immediately after a rebuild. Other wells generate on demand.
+    from db_backend import connect
+    from render_reports import generate as generate_report
+    con = connect(DB_PATH)
+    try:
+        generate_report(con, 1, 2, "seed")
+        con.execute("DELETE FROM audit WHERE id > 5")
+        con.commit()
+    finally:
+        con.close()
 
 
 if __name__ == "__main__":

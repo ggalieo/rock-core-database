@@ -507,6 +507,13 @@ CREATE TABLE report_output (
   generated_at timestamptz,
   generated_by text,
   error_msg    text,
+  source_type  text DEFAULT 'placeholder',
+  renderer_key text,
+  template_version text,
+  data_version text,
+  file_hash    text,
+  file_size    integer,
+  review_status text DEFAULT '未审核',
   UNIQUE (well_id, template_id)
 );
 CREATE INDEX idx_report_output_well ON report_output(well_id);

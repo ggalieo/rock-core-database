@@ -24,6 +24,7 @@ import audit
 from excel_entry import import_rows as entry_import, template as entry_template
 import image_entry
 import reports
+import render_reports
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -180,8 +181,9 @@ def api_wells(conn, qs):
     for it in items:
         prods = rows(conn, "SELECT code, status FROM products WHERE well_id=?", (it["id"],))
         it["products"] = {p["code"]: p["status"] for p in prods}
-        it["reports"] = rows(conn, """SELECT ro.template_id, t.code, t.name, t.version, t.project,
-            ro.status, ro.generated_at
+        it["reports"] = rows(conn, """SELECT ro.template_id, ro.status, ro.file_url, ro.file_hash,
+            ro.file_size, ro.data_version, ro.template_version, ro.source_type, ro.generated_at,
+            t.code, t.name, t.version, t.project
             FROM report_output ro JOIN report_template t ON t.id=ro.template_id
             WHERE ro.well_id=? AND t.is_active ORDER BY t.sort_no, t.id""", (it["id"],))
     filters = {
@@ -593,6 +595,12 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/inventory/txn":
                 data = post_txn(conn, body, user)
                 return ok(self, data) if data else fail(self, "section not found", 404)
+            m = re.match(r"^/api/reports/well/(\d+)/(\d+)/generate$", path)
+            if m:
+                try:
+                    return ok(self, render_reports.generate(conn, int(m.group(1)), int(m.group(2)), user))
+                except render_reports.RenderError as e:
+                    return fail(self, e.message, e.status)
             m = re.match(r"^/api/reports/well/(\d+)/(\d+)$", path)
             if m:
                 return ok(self, reports.set_status(conn, int(m.group(1)), int(m.group(2)), body, user))

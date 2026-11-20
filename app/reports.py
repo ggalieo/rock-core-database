@@ -29,7 +29,9 @@ def well_outputs(conn, well_id):
         raise EntryError("井不存在", 404)
     items = _rows(conn, """SELECT t.*, c.name AS category_name,
         wc.id AS chart_id, wc.status, wc.file_url, wc.image_url,
-        wc.generated_at, wc.generated_by, wc.error_msg
+        wc.generated_at, wc.generated_by, wc.error_msg,
+        wc.source_type, wc.renderer_key, wc.template_version, wc.data_version,
+        wc.file_hash, wc.file_size, wc.review_status
         FROM report_template t JOIN report_category c ON c.code=t.category_code
         LEFT JOIN report_output wc ON wc.template_id=t.id AND wc.well_id=?
         WHERE t.is_active ORDER BY c.sort_no, t.sort_no, t.version""", (well_id,))
@@ -50,6 +52,8 @@ def set_status(conn, well_id, template_id, body, actor="system"):
     file_url = body.get("file_url") or None
     image_url = body.get("image_url") or None
     error = body.get("error_msg") or None
+    if status == "已生成" and not file_url:
+        raise EntryError("请通过成果生成器生成文件，不能只改状态", 400)
     try:
         conn.execute("""INSERT INTO report_output(well_id,template_id,status,file_url,image_url,generated_at,generated_by,error_msg)
             VALUES(?,?,?,?,?,?,?,?)
@@ -144,7 +148,8 @@ def matrix(conn, include_inactive=False):
         FROM report_template t JOIN report_category c ON c.code=t.category_code
         {where} ORDER BY c.sort_no, t.sort_no, t.version""")
     wells = _rows(conn, "SELECT id, code, name FROM wells WHERE deleted_at IS NULL ORDER BY code")
-    outputs = _rows(conn, """SELECT well_id, template_id, status, file_url, generated_at
+    outputs = _rows(conn, """SELECT well_id, template_id, status, file_url, generated_at,
+        data_version, template_version, source_type
         FROM report_output""")
     lookup = {}
     for o in outputs:

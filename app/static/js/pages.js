@@ -219,6 +219,7 @@ export async function wells() {
     CORE_LAYER: "层模板",
   };
   const reportAction = (wellId, r) => {
+    if (r.file_url) return [r.file_url, "打开成果图"];
     const map = {
       CORE_BASIC: [`#/well/${wellId}?tab=column`, "打开综合柱状图"],
       CORE_COMPOSITE: [`#/well/${wellId}?tab=column`, "打开综合柱状图"],
@@ -387,6 +388,7 @@ export async function well(id) {
   const reports = d.reports || [];
   const reportDone = reports.filter((x) => x.status === "已生成").length;
   const reportViewHref = (r) => {
+    if (r.file_url) return r.file_url;
     const map = {
       CORE_BASIC: `#/well/${id}?tab=column`, CORE_COMPOSITE: `#/well/${id}?tab=column`,
       BOREHOLE_COLUMN: `#/well/${id}?tab=column`,
@@ -577,21 +579,27 @@ export async function well(id) {
           <td>${esc(x.category_name)}</td><td class="left">${esc(x.name)}</td>
           <td>${esc(x.version || "—")}</td><td>${esc(x.project || "通用")}</td><td>${esc(x.output_type)}</td>
           <td>${x.status === "已生成" ? '<span class="badge-soft badge-green">已生成</span>' : `<span class="badge-soft">${esc(x.status || "未生成")}</span>`}</td>
-          <td>${esc(x.generated_at || "—")}</td>
+          <td>${esc(x.generated_at || "—")}${x.data_version ? `<br><span class="sub">数据 ${esc(x.data_version)}</span>` : ""}</td>
           <td>
-            <a class="btn small ghost" href="${reportViewHref(x)}">查看</a>
-            ${!canWrite || x.status === "已生成" ? "" : `<button class="btn small chart-set" data-tid="${x.id}">标记已生成</button>`}
+            <a class="btn small ghost" href="${reportViewHref(x)}" ${x.file_url ? 'target="_blank" rel="noopener"' : ""}>${x.file_url ? "打开" : "查看"}</a>
+            ${canWrite && ["CORE_BASIC", "CORE_COMPOSITE"].includes(x.code)
+              ? `<button class="btn small primary report-generate" data-tid="${x.id}">${x.file_url ? "重新生成" : "生成"}</button>` : ""}
           </td>
         </tr>`).join("") : `<tr><td colspan="8">${empty("暂无成果模板")}</td></tr>`}</tbody>
       </table></div>
     </section>`;
   document.getElementById("clearReportFocus")?.addEventListener("click", () => go(`#/well/${id}?tab=charts`));
-  document.querySelectorAll(".chart-set").forEach((b) => b.addEventListener("click", async () => {
+  document.querySelectorAll(".report-generate").forEach((b) => b.addEventListener("click", async () => {
+    const old = b.textContent;
+    b.disabled = true; b.textContent = "生成中…";
     try {
-      await api(`/api/reports/well/${id}/${b.dataset.tid}`, { method: "POST", body: JSON.stringify({ status: "已生成" }) });
-      toast("成果输出已更新", "ok");
+      const r = await api(`/api/reports/well/${id}/${b.dataset.tid}/generate`, { method: "POST", body: "{}" });
+      toast(`成果图已生成 · 数据版本 ${r.data_version}`, "ok");
       well(id);
-    } catch (e) { toast(e.message || "更新失败", "error"); }
+    } catch (e) {
+      toast(e.message || "生成失败", "error");
+      b.disabled = false; b.textContent = old;
+    }
   }));
 
   document.getElementById("tab-stock").innerHTML = d.inventory.length ? `
